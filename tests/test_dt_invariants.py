@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import unittest
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -33,6 +34,20 @@ from argo_dt.types import (
 
 def now() -> datetime:
     return datetime.now(UTC)
+
+
+def epistemic(**overrides: float) -> dict[str, float]:
+    values = {
+        "evidence_quality": 0.8,
+        "confidence": 0.7,
+        "salience": 0.6,
+        "stability": 0.5,
+        "freshness": 0.9,
+        "scope_confidence": 0.7,
+        "contradiction_load": 0.1,
+    }
+    values.update(overrides)
+    return values
 
 
 class TypeInvariantTests(unittest.TestCase):
@@ -103,6 +118,17 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(InvariantViolation):
             self.store.append(changed, expected_sequence=0)
 
+        changed_producer = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="DegradationDeclared",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"reason": "test"},
+            producer="different-producer",
+            idempotency_key="same-key",
+        )
+        with self.assertRaises(InvariantViolation):
+            self.store.append(changed_producer, expected_sequence=0)
+
     def test_optimistic_concurrency(self) -> None:
         self.store.append(self.event("one"), expected_sequence=0)
         with self.assertRaises(ConcurrencyConflict):
@@ -160,7 +186,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             sensitivity=sensitivity,
             valid_from=self.instant,
             valid_until=None,
-            epistemic={"confidence": 0.7},
+            epistemic=epistemic(),
             expected_sequence=sequence,
             idempotency_key=f"claim-{sequence}",
         )
@@ -191,6 +217,130 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 expected_sequence=0,
                 idempotency_key="unsupported",
             )
+
+    async def test_incomplete_epistemic_vector_is_rejected(self) -> None:
+        evidence = await self.ingest()
+        with self.assertRaises(InvariantViolation):
+            await self.service.propose_claim(
+                twin_id="twin-1",
+                subject_id="human-1",
+                statement="under-specified",
+                kind="preference",
+                provenance=[
+                    {
+                        "evidence_id": evidence.payload["evidence_id"],
+                        "relation": "supports",
+                        "independence_group": evidence.payload["independence_group"],
+                    }
+                ],
+                sensitivity=Sensitivity.INTERNAL,
+                valid_from=self.instant,
+                valid_until=None,
+                epistemic={"confidence": 0.7},
+                expected_sequence=1,
+                idempotency_key="incomplete-epistemic",
+            )
+
+    async def test_unknown_provenance_is_rejected_before_persistence(self) -> None:
+        await self.ingest()
+        with self.assertRaises(InvariantViolation):
+            await self.service.propose_claim(
+                twin_id="twin-1",
+                subject_id="human-1",
+                statement="unsupported reference",
+                kind="preference",
+                provenance=[
+                    {
+                        "evidence_id": "missing",
+                        "relation": "supports",
+                        "independence_group": "missing",
+                    }
+                ],
+                sensitivity=Sensitivity.INTERNAL,
+                valid_from=self.instant,
+                valid_until=None,
+                epistemic=epistemic(),
+                expected_sequence=1,
+                idempotency_key="unknown-evidence",
+            )
+        self.assertEqual(1, self.store.head("twin-1")[0])
+
+    async def test_twin_cannot_mix_subjects(self) -> None:
+        await self.ingest()
+        with self.assertRaises(InvariantViolation):
+            await self.service.ingest_evidence(
+                twin_id="twin-1",
+                subject_id="human-2",
+                source="unit-test",
+                source_record_id="other-subject",
+                payload={"text": "must not cross-bind"},
+                rights={"processing": ["modeling"]},
+                sensitivity=Sensitivity.INTERNAL,
+                valid_from=self.instant,
+                valid_until=None,
+                independence_group="session-other",
+                expected_sequence=1,
+                idempotency_key="wrong-subject",
+            )
+
+    async def test_evidence_identity_is_namespaced_by_twin(self) -> None:
+        first = await self.ingest()
+        second = await self.service.ingest_evidence(
+            twin_id="twin-2",
+            subject_id="human-1",
+            source="unit-test",
+            source_record_id="record-0",
+            payload={"text": "observed"},
+            rights={"processing": ["modeling"]},
+            sensitivity=Sensitivity.INTERNAL,
+            valid_from=self.instant,
+            valid_until=None,
+            independence_group="session-0",
+            expected_sequence=0,
+            idempotency_key="evidence-other-twin",
+        )
+        self.assertNotEqual(first.payload["evidence_id"], second.payload["evidence_id"])
+
+    async def test_invalid_transition_is_rejected_before_persistence(self) -> None:
+        invalid = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="ClaimAccepted",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"claim_id": "missing"},
+            producer="reviewer",
+            idempotency_key="invalid-transition",
+        )
+        with self.assertRaises(InvariantViolation):
+            await self.service.append(invalid, expected_sequence=0)
+        self.assertEqual(0, self.store.head("twin-1")[0])
+
+    async def test_event_plane_ownership_is_enforced(self) -> None:
+        wrong_plane = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="ProjectionIssued",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={
+                "projection_id": str(uuid.uuid4()),
+                "purpose": "test",
+                "recipient_id": "test",
+                "receipt_hash": "sha256:" + "0" * 64,
+            },
+            producer="test",
+            idempotency_key="wrong-plane",
+        )
+        with self.assertRaises(InvariantViolation):
+            await self.service.append(wrong_plane, expected_sequence=0)
+
+        simulation = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="ScenarioStatePredicted",
+            plane=EventPlane.SIMULATION,
+            payload={"predicted_state": {}},
+            producer="simulation-worker",
+            idempotency_key="wrong-store",
+        )
+        with self.assertRaises(InvariantViolation):
+            await self.service.append(simulation, expected_sequence=0)
 
     async def test_evidence_deletion_invalidates_dependent_claim(self) -> None:
         evidence = await self.ingest()
@@ -249,6 +399,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(evidence.sequence, branch.base_sequence)
 
     async def test_projection_is_default_deny(self) -> None:
+        await self.ingest()
         request = ProjectionRequest(
             request_id=str(uuid.uuid4()),
             twin_id="twin-1",
@@ -264,9 +415,43 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             await self.service.issue_projection(
                 request=request,
                 consent=None,
-                expected_sequence=0,
+                expected_sequence=1,
                 idempotency_key="projection-denied",
             )
+
+    async def test_projection_subject_must_match_bound_twin(self) -> None:
+        await self.ingest()
+        request = ProjectionRequest(
+            request_id=str(uuid.uuid4()),
+            twin_id="twin-1",
+            subject_id="human-2",
+            recipient_id="questn",
+            purpose="decision-support",
+            requested_fields=frozenset({"readiness"}),
+            maximum_sensitivity=Sensitivity.INTERNAL,
+            as_of_valid_time=self.instant,
+            as_of_recorded_time=now(),
+        )
+        with self.assertRaises(InvariantViolation):
+            await self.service.issue_projection(
+                request=request,
+                consent=None,
+                expected_sequence=1,
+                idempotency_key="projection-wrong-subject",
+            )
+
+    async def test_unknown_projection_cannot_be_revoked(self) -> None:
+        await self.ingest()
+        with self.assertRaises(InvariantViolation):
+            await self.service.revoke_projection(
+                twin_id="twin-1",
+                projection_id=str(uuid.uuid4()),
+                reason="not issued",
+                actor_identity_id="human-1",
+                expected_sequence=1,
+                idempotency_key="projection-revoke-missing",
+            )
+        self.assertEqual(1, self.store.head("twin-1")[0])
 
     async def test_projection_excludes_more_sensitive_claims(self) -> None:
         evidence_one = await self.ingest()
@@ -312,6 +497,20 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([internal.payload["claim_id"]], [item["claim_id"] for item in claims])
         self.assertNotIn(str(restricted.payload["claim_id"]), receipt.source_claim_ids)
         self.assertEqual(EventPlane.PROJECTION, event.plane)
+        for artifact in projection["artifacts"].values():
+            self.assertEqual({"degraded"}, set(artifact["loss_report"]))
+
+        revoked = await self.service.revoke_projection(
+            twin_id="twin-1",
+            projection_id=receipt.projection_id,
+            reason="purpose completed",
+            actor_identity_id="human-1",
+            expected_sequence=7,
+            idempotency_key="projection-revoked",
+        )
+        state = self.service.state("twin-1")
+        self.assertEqual(EventPlane.PROJECTION, revoked.plane)
+        self.assertIn(receipt.projection_id, state.revoked_projection_ids)
 
     async def test_bounded_stream_disconnects_slow_consumer(self) -> None:
         broker = BoundedEventBroker(queue_capacity=1)
@@ -336,6 +535,24 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         await broker.publish(second)
         with self.assertRaises(BackpressureExceeded):
             await subscription.__anext__()
+        with self.assertRaises(BackpressureExceeded):
+            await asyncio.wait_for(subscription.__anext__(), timeout=0.1)
+
+    async def test_idempotent_retry_is_not_republished(self) -> None:
+        subscription = await self.service.subscribe("twin-1")
+        event = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="DegradationDeclared",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"reason": "test"},
+            producer="test",
+            idempotency_key="service-idempotency",
+        )
+        first = await self.service.append(event, expected_sequence=0)
+        duplicate = await self.service.append(event, expected_sequence=0)
+        self.assertEqual(first.event_id, duplicate.event_id)
+        self.assertEqual(first.event_id, (await subscription.__anext__()).event_id)
+        self.assertTrue(subscription.queue.empty())
 
 
 class AuthorityTests(unittest.TestCase):

@@ -89,7 +89,11 @@ class KernelCompiler:
             selected = [
                 state.claims[claim_id]
                 for claim_id in sorted(state.contested_claim_ids)
-                if claim_id in state.claims and visible(state.claims[claim_id])
+                if (
+                    claim_id in state.claims
+                    and claim_id not in state.stale_claim_ids
+                    and visible(state.claims[claim_id])
+                )
             ]
         elif artifact_type == "readiness":
             selected = []
@@ -160,6 +164,8 @@ class ProjectionCompiler:
     ) -> tuple[dict[str, Any], ProjectionReceipt]:
         if request.twin_id != state.twin_id:
             raise InvariantViolation("projection request twin does not match state")
+        if state.subject_id is None or request.subject_id != state.subject_id:
+            raise InvariantViolation("projection request subject does not match twin")
         allowed, reasons, fields = self._policy.evaluate_projection(
             request,
             consent,
@@ -184,12 +190,6 @@ class ProjectionCompiler:
                 "source_sequence": artifact.source_sequence,
                 "payload": artifact.payload,
                 "loss_report": {
-                    "omitted_stale_claim_count": len(
-                        artifact.loss_report["excluded_stale_claim_ids"]
-                    ),
-                    "unresolved_contradiction_count": len(
-                        artifact.loss_report["unresolved_contradiction_ids"]
-                    ),
                     "degraded": bool(artifact.loss_report["degraded_reasons"]),
                 },
                 "artifact_hash": artifact.artifact_hash,

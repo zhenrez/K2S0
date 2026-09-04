@@ -1,4 +1,4 @@
-# ARGO Digital Twin branch
+# K2S0 Digital Twin Core
 
 This repository is an integration-ready Digital Twin branch for the
 MARC-0 → CHIP → Constitution → MARC-1 → Wausauk33 → MorphIQ → QuestN cascade.

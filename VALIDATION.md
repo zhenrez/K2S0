@@ -7,7 +7,7 @@ Date: 2026-09-04 UTC
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant tests | 15/15 passed |
+| Invariant tests | 24/24 passed |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
 | JSON contracts | All four JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
@@ -31,11 +31,20 @@ Covered tests:
 - sensitivity-minimized projection;
 - bounded stream backpressure;
 - information consent separate from action authority.
+- one-subject-per-twin binding;
+- provenance referential integrity and independence-group matching;
+- strict seven-dimension claim epistemics;
+- authoritative, projection, and simulation plane ownership;
+- invalid-transition rejection before persistence;
+- projection subject binding and revocation;
+- projection loss-report privacy;
+- idempotent retries without duplicate event publication;
+- terminal slow-consumer behavior without a blocking retry.
 
 ## Local smoke benchmark
 
-The SQLite reference adapter appended and verified 1,000 events at
-approximately 7,916 events/second in this ephemeral environment.
+The SQLite reference adapter appended and verified 10,000 events at
+approximately 9,795 events/second in this ephemeral environment.
 
 This is not a production capacity result. It excludes network, authentication,
 Bronze object I/O, PostgreSQL replication, outbox publication, contention,
@@ -57,4 +66,3 @@ tests pass.
 | Wheel build | Package command triggered a blocked dependency/network workflow; no network override was attempted |
 
 These are open verification items, not passed checks.
-

@@ -24,6 +24,10 @@ class Subscription:
         return self
 
     async def __anext__(self) -> EventEnvelope:
+        if self._closed:
+            if self._close_reason:
+                raise BackpressureExceeded(self._close_reason)
+            raise StopAsyncIteration
         item = await self.queue.get()
         if item is _CLOSED:
             self._closed = True
@@ -101,4 +105,3 @@ class BoundedEventBroker:
                     "subscriber exceeded bounded queue; reconnect with last sequence"
                 )
                 self.stats.disconnected_slow_consumers += 1
-

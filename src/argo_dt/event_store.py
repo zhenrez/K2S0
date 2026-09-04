@@ -102,6 +102,10 @@ class SQLiteEventStore:
                         existing.event_type != event.event_type
                         or existing.plane is not event.plane
                         or canonical_json(existing.payload) != canonical_json(event.payload)
+                        or existing.producer != event.producer
+                        or existing.schema_version != event.schema_version
+                        or existing.causation_id != event.causation_id
+                        or existing.correlation_id != event.correlation_id
                     ):
                         raise InvariantViolation(
                             "idempotency key was reused for a different request"

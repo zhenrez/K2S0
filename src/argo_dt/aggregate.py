@@ -8,18 +8,20 @@ from typing import Any
 
 from .errors import InvariantViolation
 from .ports import EventStore
-from .types import EventEnvelope, EventPlane, Sensitivity, parse_time
+from .types import EpistemicVector, EventEnvelope, EventPlane, Sensitivity, parse_time
 
 
 @dataclass(slots=True)
 class TwinState:
     twin_id: str
+    subject_id: str | None = None
     sequence: int = 0
     evidence: dict[str, dict[str, Any]] = field(default_factory=dict)
     claims: dict[str, dict[str, Any]] = field(default_factory=dict)
     accepted_claim_ids: set[str] = field(default_factory=set)
     contested_claim_ids: set[str] = field(default_factory=set)
     contradictions: dict[str, dict[str, Any]] = field(default_factory=dict)
+    issued_projections: dict[str, dict[str, Any]] = field(default_factory=dict)
     revoked_projection_ids: set[str] = field(default_factory=set)
     stale_claim_ids: set[str] = field(default_factory=set)
     degraded_reasons: list[str] = field(default_factory=list)
@@ -65,25 +67,102 @@ class TwinAggregate:
         "ClaimRetired",
         "ClaimSuperseded",
     }
+    PROJECTION_EVENTS = {"ProjectionIssued", "ProjectionRevoked"}
+    EPISTEMIC_DIMENSIONS = {
+        "evidence_quality",
+        "confidence",
+        "salience",
+        "stability",
+        "freshness",
+        "scope_confidence",
+        "contradiction_load",
+    }
+
+    @staticmethod
+    def _bind_subject(state: TwinState, subject_id: str) -> None:
+        if not subject_id:
+            raise InvariantViolation("subject_id is required")
+        if state.subject_id is not None and state.subject_id != subject_id:
+            raise InvariantViolation("event subject does not match twin subject")
+        state.subject_id = subject_id
+
+    @staticmethod
+    def validate_epistemic(value: Any) -> None:
+        if not isinstance(value, dict) or set(value) != TwinAggregate.EPISTEMIC_DIMENSIONS:
+            raise InvariantViolation(
+                "epistemic vector requires exactly seven independent dimensions"
+            )
+        try:
+            EpistemicVector(**value)
+        except (TypeError, ValueError) as exc:
+            raise InvariantViolation("epistemic dimensions must be numeric") from exc
 
     @staticmethod
     def validate_event(event: EventEnvelope) -> None:
         payload = event.payload
         if not event.twin_id or not event.producer or not event.idempotency_key:
             raise InvariantViolation("event twin_id, producer, and idempotency_key are required")
+        if event.occurred_at.tzinfo is None:
+            raise InvariantViolation("event occurred_at must be timezone-aware")
+        if event.plane is EventPlane.PROJECTION and event.event_type not in (
+            TwinAggregate.PROJECTION_EVENTS
+        ):
+            raise InvariantViolation("projection plane accepts projection events only")
+        if (
+            event.event_type in TwinAggregate.PROJECTION_EVENTS
+            and event.plane is not EventPlane.PROJECTION
+        ):
+            raise InvariantViolation("projection events must use the projection plane")
         if event.event_type == "EvidenceIngested":
-            required = {"evidence_id", "content_hash", "source", "rights", "sensitivity"}
+            required = {
+                "evidence_id",
+                "subject_id",
+                "content_hash",
+                "source",
+                "rights",
+                "sensitivity",
+                "independence_group",
+            }
             missing = required.difference(payload)
             if missing:
                 raise InvariantViolation(
                     f"EvidenceIngested missing fields: {', '.join(sorted(missing))}"
                 )
+            if any(not payload[field] for field in required - {"rights"}):
+                raise InvariantViolation("EvidenceIngested required fields cannot be empty")
+            if not isinstance(payload["rights"], dict):
+                raise InvariantViolation("EvidenceIngested rights must be an object")
+            try:
+                Sensitivity(str(payload["sensitivity"]))
+            except ValueError as exc:
+                raise InvariantViolation("EvidenceIngested sensitivity is invalid") from exc
         if event.event_type == "ClaimProposed":
             provenance = payload.get("provenance")
             if not isinstance(provenance, list) or not provenance:
                 raise InvariantViolation("ClaimProposed requires non-empty provenance")
-            if not payload.get("claim_id") or not payload.get("statement"):
-                raise InvariantViolation("ClaimProposed requires claim_id and statement")
+            evidence_ids = [
+                ref.get("evidence_id")
+                for ref in provenance
+                if isinstance(ref, dict)
+            ]
+            if len(evidence_ids) != len(provenance) or any(not item for item in evidence_ids):
+                raise InvariantViolation("every provenance reference requires evidence_id")
+            if len(set(evidence_ids)) != len(evidence_ids):
+                raise InvariantViolation("duplicate evidence cannot count as independent support")
+            for ref in provenance:
+                if not ref.get("relation") or not ref.get("independence_group"):
+                    raise InvariantViolation(
+                        "every provenance reference requires relation and independence_group"
+                    )
+            if (
+                not payload.get("claim_id")
+                or not payload.get("subject_id")
+                or not payload.get("statement")
+            ):
+                raise InvariantViolation(
+                    "ClaimProposed requires claim_id, subject_id, and statement"
+                )
+            TwinAggregate.validate_epistemic(payload.get("epistemic"))
         if event.event_type == "EvidenceDeleted" and not payload.get("evidence_id"):
             raise InvariantViolation("EvidenceDeleted requires evidence_id")
         if event.event_type in TwinAggregate.CLAIM_EVENTS - {"ClaimProposed"}:
@@ -108,6 +187,7 @@ class TwinAggregate:
         event_type = event.event_type
 
         if event_type == "EvidenceIngested":
+            cls._bind_subject(state, str(payload["subject_id"]))
             state.evidence[str(payload["evidence_id"])] = payload
         elif event_type == "EvidenceDeleted":
             evidence_id = str(payload["evidence_id"])
@@ -117,6 +197,16 @@ class TwinAggregate:
                 if any(ref.get("evidence_id") == evidence_id for ref in refs):
                     state.stale_claim_ids.add(claim_id)
         elif event_type == "ClaimProposed":
+            cls._bind_subject(state, str(payload["subject_id"]))
+            for ref in payload["provenance"]:
+                evidence_id = str(ref["evidence_id"])
+                if evidence_id not in state.evidence:
+                    raise InvariantViolation("claim provenance references unknown evidence")
+                expected_group = state.evidence[evidence_id].get("independence_group")
+                if ref.get("independence_group") != expected_group:
+                    raise InvariantViolation(
+                        "claim provenance independence group does not match evidence"
+                    )
             claim_id = str(payload["claim_id"])
             claim = dict(payload)
             claim["recorded_at"] = event.recorded_at.isoformat()
@@ -135,18 +225,30 @@ class TwinAggregate:
             state.accepted_claim_ids.discard(claim_id)
         elif event_type == "ClaimRetired":
             claim_id = str(payload["claim_id"])
+            if claim_id not in state.claims:
+                raise InvariantViolation("cannot retire an unknown claim")
             state.accepted_claim_ids.discard(claim_id)
         elif event_type == "ClaimSuperseded":
             claim_id = str(payload["claim_id"])
             successor_id = str(payload.get("successor_claim_id", ""))
             if not successor_id:
                 raise InvariantViolation("ClaimSuperseded requires successor_claim_id")
+            if claim_id not in state.claims or successor_id not in state.claims:
+                raise InvariantViolation("supersession requires known predecessor and successor")
             state.accepted_claim_ids.discard(claim_id)
         elif event_type == "ContradictionDetected":
             contradiction_id = str(payload["contradiction_id"])
             state.contradictions[contradiction_id] = payload
         elif event_type == "ProjectionRevoked":
-            state.revoked_projection_ids.add(str(payload["projection_id"]))
+            projection_id = str(payload["projection_id"])
+            if projection_id not in state.issued_projections:
+                raise InvariantViolation("cannot revoke an unknown projection")
+            state.revoked_projection_ids.add(projection_id)
+        elif event_type == "ProjectionIssued":
+            if state.subject_id is None:
+                raise InvariantViolation("cannot issue a projection for an unbound twin")
+            projection_id = str(payload["projection_id"])
+            state.issued_projections[projection_id] = payload
         elif event_type == "DegradationDeclared":
             state.degraded_reasons.append(str(payload["reason"]))
         elif event_type == "DegradationCleared":

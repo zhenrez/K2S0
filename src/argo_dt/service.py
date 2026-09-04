@@ -20,6 +20,7 @@ from .types import (
     ProjectionRequest,
     Sensitivity,
     content_hash,
+    utc_now,
 )
 
 
@@ -47,8 +48,21 @@ class DigitalTwinService:
         expected_sequence: int,
     ) -> EventEnvelope:
         TwinAggregate.validate_event(event)
+        if event.plane is EventPlane.SIMULATION:
+            raise InvariantViolation(
+                "simulation events belong to SimulationBranch, not the authoritative store"
+            )
+        head_sequence, head_hash = self.store.head(event.twin_id)
+        if head_sequence == expected_sequence:
+            preview = event.seal(
+                sequence=expected_sequence + 1,
+                previous_hash=head_hash,
+                recorded_at=utc_now(),
+            )
+            TwinAggregate.apply(self.state(event.twin_id), preview)
         persisted = self.store.append(event, expected_sequence=expected_sequence)
-        await self.broker.publish(persisted)
+        if persisted.sequence > head_sequence:
+            await self.broker.publish(persisted)
         return persisted
 
     async def ingest_evidence(
@@ -67,7 +81,15 @@ class DigitalTwinService:
         expected_sequence: int,
         idempotency_key: str,
     ) -> EventEnvelope:
-        evidence_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{source}:{source_record_id}"))
+        state = self.state(twin_id)
+        if state.subject_id is not None and state.subject_id != subject_id:
+            raise InvariantViolation("evidence subject does not match twin subject")
+        evidence_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"{twin_id}:{subject_id}:{source}:{source_record_id}",
+            )
+        )
         event = EventEnvelope.new(
             twin_id=twin_id,
             event_type="EvidenceIngested",
@@ -109,6 +131,23 @@ class DigitalTwinService:
     ) -> EventEnvelope:
         if not provenance:
             raise InvariantViolation("a claim cannot be proposed without provenance")
+        state = self.state(twin_id)
+        if state.sequence != expected_sequence:
+            raise ConcurrencyConflict(
+                f"claim expected {expected_sequence}, state is {state.sequence}"
+            )
+        if state.subject_id is None or state.subject_id != subject_id:
+            raise InvariantViolation("claim subject does not match twin subject")
+        for ref in provenance:
+            evidence_id = str(ref.get("evidence_id", ""))
+            evidence = state.evidence.get(evidence_id)
+            if evidence is None:
+                raise InvariantViolation("claim provenance references unknown evidence")
+            if ref.get("independence_group") != evidence.get("independence_group"):
+                raise InvariantViolation(
+                    "claim provenance independence group does not match evidence"
+                )
+        TwinAggregate.validate_epistemic(dict(epistemic))
         claim_id = str(uuid.uuid4())
         event = EventEnvelope.new(
             twin_id=twin_id,
@@ -156,6 +195,10 @@ class DigitalTwinService:
             },
         )
         state = self.state(twin_id)
+        if state.sequence != expected_sequence:
+            raise ConcurrencyConflict(
+                f"review expected {expected_sequence}, state is {state.sequence}"
+            )
         if claim_id not in state.claims:
             raise InvariantViolation("cannot review an unknown claim")
         return await self.append(event, expected_sequence=expected_sequence)
@@ -191,6 +234,8 @@ class DigitalTwinService:
             request.twin_id,
             as_of_recorded_time=request.as_of_recorded_time,
         )
+        if state.subject_id is None or state.subject_id != request.subject_id:
+            raise InvariantViolation("projection subject does not match twin subject")
         projection, receipt = self.projection_compiler.compile(
             state=state,
             request=request,
@@ -214,6 +259,37 @@ class DigitalTwinService:
         )
         persisted = await self.append(audit_event, expected_sequence=expected_sequence)
         return projection, receipt, persisted
+
+    async def revoke_projection(
+        self,
+        *,
+        twin_id: str,
+        projection_id: str,
+        reason: str,
+        actor_identity_id: str,
+        expected_sequence: int,
+        idempotency_key: str,
+    ) -> EventEnvelope:
+        state = self.state(twin_id)
+        if state.sequence != expected_sequence:
+            raise ConcurrencyConflict(
+                f"revocation expected {expected_sequence}, state is {state.sequence}"
+            )
+        if projection_id not in state.issued_projections:
+            raise InvariantViolation("cannot revoke an unknown projection")
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="ProjectionRevoked",
+            plane=EventPlane.PROJECTION,
+            producer=actor_identity_id,
+            idempotency_key=idempotency_key,
+            payload={
+                "projection_id": projection_id,
+                "reason": reason,
+                "actor_identity_id": actor_identity_id,
+            },
+        )
+        return await self.append(event, expected_sequence=expected_sequence)
 
     def fork_simulation(self, twin_id: str, *, scenario: str) -> SimulationBranch:
         return self.simulations.fork(self.state(twin_id), scenario=scenario)
