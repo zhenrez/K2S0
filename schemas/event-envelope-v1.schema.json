@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.local/schemas/event-envelope-v1.schema.json",
+  "title": "ARGO Digital Twin EventEnvelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "twin_id",
+    "sequence",
+    "event_type",
+    "plane",
+    "payload",
+    "occurred_at",
+    "recorded_at",
+    "producer",
+    "idempotency_key",
+    "previous_hash",
+    "event_hash"
+  ],
+  "properties": {
+    "schema_version": { "const": "argo.dt.event/v1" },
+    "event_id": { "type": "string", "format": "uuid" },
+    "twin_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "event_type": { "type": "string", "minLength": 1 },
+    "plane": {
+      "enum": ["authoritative", "projection", "simulation"]
+    },
+    "payload": { "type": "object" },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "producer": { "type": "string", "minLength": 1 },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "causation_id": {
+      "oneOf": [{ "type": "string" }, { "type": "null" }]
+    },
+    "correlation_id": {
+      "oneOf": [{ "type": "string" }, { "type": "null" }]
+    },
+    "previous_hash": {
+      "type": "string",
+      "pattern": "^(|sha256:[a-f0-9]{64})$"
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}
+

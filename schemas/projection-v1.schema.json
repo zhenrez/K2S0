@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.local/schemas/projection-v1.schema.json",
+  "title": "ARGO Digital Twin Projection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "twin_id",
+    "subject_id",
+    "recipient_id",
+    "purpose",
+    "as_of_valid_time",
+    "as_of_recorded_time",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": { "const": "argo.dt.projection/v1" },
+    "twin_id": { "type": "string", "minLength": 1 },
+    "subject_id": { "type": "string", "minLength": 1 },
+    "recipient_id": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1 },
+    "as_of_valid_time": { "type": "string", "format": "date-time" },
+    "as_of_recorded_time": { "type": "string", "format": "date-time" },
+    "artifacts": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "kernel",
+          "now",
+          "counterweights",
+          "voice",
+          "people",
+          "capabilities",
+          "decision_model",
+          "boundaries",
+          "history",
+          "readiness"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "artifact_id",
+          "status",
+          "source_sequence",
+          "payload",
+          "loss_report",
+          "artifact_hash"
+        ],
+        "properties": {
+          "artifact_id": { "type": "string", "format": "uuid" },
+          "status": { "enum": ["ready", "degraded"] },
+          "source_sequence": { "type": "integer", "minimum": 0 },
+          "payload": { "type": "object" },
+          "loss_report": { "type": "object" },
+          "artifact_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}
+

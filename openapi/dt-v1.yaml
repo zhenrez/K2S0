@@ -1,0 +1,306 @@
+openapi: 3.1.0
+info:
+  title: ARGO Digital Twin Control API
+  version: 1.0.0
+  description: |
+    Low-rate control and query surface. Use gRPC StreamTelemetry for
+    high-volume telemetry and WebSocket /v1/twins/{twin_id}/events for
+    browser-facing real-time deltas.
+servers:
+  - url: https://dt.internal.example
+security:
+  - oidc: [dt.read]
+paths:
+  /v1/twins/{twin_id}/state:
+    get:
+      operationId: getTwinState
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - name: as_of_valid_time
+          in: query
+          schema: { type: string, format: date-time }
+        - name: as_of_recorded_time
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Bitemporal state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TwinState" }
+        "403": { $ref: "#/components/responses/Denied" }
+  /v1/twins/{twin_id}/projections:
+    post:
+      operationId: compileProjection
+      security:
+        - oidc: [dt.project]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectionRequest" }
+      responses:
+        "201":
+          description: Purpose-bound projection and private receipt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectionResponse" }
+        "403": { $ref: "#/components/responses/Denied" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/projections/{projection_id}/revoke:
+    post:
+      operationId: revokeProjection
+      security:
+        - oidc: [dt.project.revoke]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - name: projection_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      responses:
+        "200":
+          description: Revocation appended and dependent caches invalidated
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/simulations:
+    post:
+      operationId: forkSimulation
+      security:
+        - oidc: [dt.simulate]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [base_sequence, scenario]
+              properties:
+                base_sequence: { type: integer, minimum: 0 }
+                scenario: { type: string, minLength: 1 }
+      responses:
+        "201":
+          description: Isolated simulation branch
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationBranch" }
+  /v1/actions/check:
+    post:
+      operationId: checkAction
+      security:
+        - oidc: [dt.action.check]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActionEnvelope" }
+      responses:
+        "200":
+          description: Authority decision; no action is executed by this API
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PolicyDecision" }
+  /healthz:
+    get:
+      operationId: health
+      security: []
+      responses:
+        "200":
+          description: Process liveness only
+  /readyz:
+    get:
+      operationId: readiness
+      security: []
+      responses:
+        "200": { description: Required dependencies healthy }
+        "503": { description: One or more required dependencies degraded }
+components:
+  securitySchemes:
+    oidc:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.internal.example/oauth/token
+          scopes:
+            dt.read: Read consent-scoped state
+            dt.project: Compile projections
+            dt.project.revoke: Revoke projections
+            dt.simulate: Run isolated simulations
+            dt.action.check: Evaluate action authority
+  parameters:
+    TwinId:
+      name: twin_id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 8, maxLength: 200 }
+    ExpectedSequence:
+      name: If-Match-Sequence
+      in: header
+      required: true
+      schema: { type: integer, minimum: 0 }
+  schemas:
+    TwinState:
+      type: object
+      required: [twin_id, sequence, cells, degraded_reasons]
+      properties:
+        twin_id: { type: string }
+        sequence: { type: integer }
+        cells:
+          type: array
+          items: { type: object }
+        degraded_reasons:
+          type: array
+          items: { type: string }
+    ProjectionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - request_id
+        - subject_id
+        - recipient_id
+        - purpose
+        - requested_fields
+        - maximum_sensitivity
+        - as_of_valid_time
+        - as_of_recorded_time
+      properties:
+        request_id: { type: string, format: uuid }
+        subject_id: { type: string }
+        recipient_id: { type: string }
+        purpose: { type: string }
+        requested_fields:
+          type: array
+          uniqueItems: true
+          items:
+            enum:
+              - kernel
+              - now
+              - counterweights
+              - voice
+              - people
+              - capabilities
+              - decision_model
+              - boundaries
+              - history
+              - readiness
+        maximum_sensitivity:
+          enum: [public, internal, confidential, restricted]
+        as_of_valid_time: { type: string, format: date-time }
+        as_of_recorded_time: { type: string, format: date-time }
+    ProjectionResponse:
+      type: object
+      required: [artifact, receipt]
+      properties:
+        artifact:
+          type: object
+          description: Contains only fields compiled for this purpose and recipient.
+        receipt:
+          type: object
+          required:
+            - projection_id
+            - consent_id
+            - policy_version
+            - source_sequence
+            - artifact_hash
+          properties:
+            projection_id: { type: string, format: uuid }
+            consent_id: { type: string }
+            policy_version: { type: string }
+            source_sequence: { type: integer }
+            artifact_hash: { type: string, pattern: "^sha256:[a-f0-9]{64}$" }
+    SimulationBranch:
+      type: object
+      required:
+        - branch_id
+        - twin_id
+        - base_sequence
+        - scenario
+        - predicted_state
+      properties:
+        branch_id: { type: string, format: uuid }
+        twin_id: { type: string }
+        base_sequence: { type: integer }
+        scenario: { type: string }
+        predicted_state: { type: object }
+        requires_human_review: { const: true }
+    ActionEnvelope:
+      type: object
+      required:
+        - action_id
+        - principal_id
+        - actor_identity_id
+        - purpose
+        - target
+        - requested_capabilities
+        - impact
+        - reversible
+        - evidence_ids
+        - constraint_version
+        - idempotency_key
+        - issued_at
+        - expires_at
+      properties:
+        action_id: { type: string }
+        principal_id: { type: string }
+        actor_identity_id: { type: string }
+        purpose: { type: string }
+        target: { type: string }
+        requested_capabilities:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        impact: { enum: [none, low, moderate, high, critical] }
+        reversible: { type: boolean }
+        evidence_ids:
+          type: array
+          items: { type: string }
+        constraint_version: { type: string }
+        idempotency_key: { type: string }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    PolicyDecision:
+      type: object
+      required: [allowed, reasons, policy_version, decision_id]
+      properties:
+        allowed: { type: boolean }
+        reasons:
+          type: array
+          items: { type: string }
+        policy_version: { type: string }
+        decision_id: { type: string }
+  responses:
+    Denied:
+      description: Policy denied without disclosing excluded fields
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { const: Policy denied }
+              status: { const: 403 }
+              decision_id: { type: string }
+    Conflict:
+      description: Expected sequence is stale
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { const: Concurrency conflict }
+              status: { const: 409 }
+              current_sequence: { type: integer }
+

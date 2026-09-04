@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.local/schemas/argocell-v1.schema.json",
+  "title": "ARGOCell v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cell_id",
+    "cell_type",
+    "subject_id",
+    "identity_kind",
+    "temporal",
+    "temporal_state",
+    "observed_state",
+    "desired_state",
+    "predicted_state",
+    "requirements",
+    "constraints",
+    "intents",
+    "relations",
+    "provenance",
+    "sensitivity"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "argo.cell/v1"
+    },
+    "cell_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cell_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "identity_kind": {
+      "enum": [
+        "human_principal",
+        "cognitive_twin",
+        "agent_service",
+        "avatar_likeness"
+      ]
+    },
+    "temporal": {
+      "$ref": "#/$defs/bitemporal"
+    },
+    "temporal_state": {
+      "enum": [
+        "event",
+        "current",
+        "recurring",
+        "era",
+        "durable",
+        "emerging",
+        "declining",
+        "retired",
+        "unknown"
+      ]
+    },
+    "observed_state": {
+      "type": "object"
+    },
+    "desired_state": {
+      "type": "object"
+    },
+    "predicted_state": {
+      "type": "object"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "intents": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    },
+    "provenance": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/provenance"
+      }
+    },
+    "epistemic": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/epistemic"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sensitivity": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ]
+    },
+    "projection_handles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "cell_type": {
+            "enum": [
+              "claim",
+              "pattern",
+              "kernel_artifact"
+            ]
+          }
+        },
+        "required": [
+          "cell_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provenance": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bitemporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid_from",
+        "recorded_at"
+      ],
+      "properties": {
+        "valid_from": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "valid_until": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recorded_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "superseded_at": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relation_type",
+        "target_cell_id",
+        "constituent"
+      ],
+      "properties": {
+        "relation_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_cell_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constituent": {
+          "type": "boolean"
+        },
+        "confidence": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "relation",
+        "independence_group"
+      ],
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independence_group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transform_id": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "epistemic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_quality",
+        "confidence",
+        "salience",
+        "stability",
+        "freshness",
+        "scope_confidence",
+        "contradiction_load"
+      ],
+      "properties": {
+        "evidence_quality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "salience": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "freshness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scope_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "contradiction_load": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}
+

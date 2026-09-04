@@ -1,0 +1,214 @@
+syntax = "proto3";
+
+package argo.dt.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+service DigitalTwin {
+  // High-throughput data plane. Each batch is independently idempotent.
+  rpc StreamTelemetry(stream TelemetryBatch) returns (stream IngestAck);
+
+  // Ordered event/state delta subscription, resumable by sequence.
+  rpc SubscribeState(StateSubscription) returns (stream TwinEvent);
+
+  rpc GetState(GetStateRequest) returns (TwinState);
+  rpc CompileProjection(CompileProjectionRequest) returns (ProjectionResponse);
+  rpc RevokeProjection(RevokeProjectionRequest) returns (ProjectionReceipt);
+
+  rpc ForkSimulation(ForkSimulationRequest) returns (SimulationBranch);
+  rpc AppendSimulation(AppendSimulationRequest) returns (SimulationBranch);
+  rpc ProposeSimulationPromotion(PromotionRequest) returns (ReviewReferral);
+
+  // Authorization is deliberately distinct from projection/data access.
+  rpc CheckAction(CheckActionRequest) returns (PolicyDecision);
+  rpc Health(google.protobuf.Empty) returns (HealthResponse);
+}
+
+message TelemetryBatch {
+  string twin_id = 1;
+  string subject_id = 2;
+  string source = 3;
+  string connector_version = 4;
+  string idempotency_key = 5;
+  int64 expected_sequence = 6;
+  repeated TelemetryRecord records = 7;
+}
+
+message TelemetryRecord {
+  string source_record_id = 1;
+  google.protobuf.Timestamp valid_from = 2;
+  google.protobuf.Timestamp valid_until = 3;
+  string media_type = 4;
+  bytes payload = 5;
+  string content_hash = 6;
+  string independence_group = 7;
+  string sensitivity = 8;
+  google.protobuf.Struct rights = 9;
+}
+
+message IngestAck {
+  string twin_id = 1;
+  string idempotency_key = 2;
+  int64 first_sequence = 3;
+  int64 last_sequence = 4;
+  repeated string event_ids = 5;
+  repeated RecordError errors = 6;
+  string resume_token = 7;
+}
+
+message RecordError {
+  int32 record_index = 1;
+  string code = 2;
+  string message = 3;
+  bool retryable = 4;
+}
+
+message StateSubscription {
+  string twin_id = 1;
+  int64 after_sequence = 2;
+  repeated string event_types = 3;
+  bool include_projection_events = 4;
+}
+
+message TwinEvent {
+  string schema_version = 1;
+  string event_id = 2;
+  string twin_id = 3;
+  int64 sequence = 4;
+  string event_type = 5;
+  string plane = 6;
+  google.protobuf.Timestamp occurred_at = 7;
+  google.protobuf.Timestamp recorded_at = 8;
+  string producer = 9;
+  string causation_id = 10;
+  string correlation_id = 11;
+  string previous_hash = 12;
+  string event_hash = 13;
+  google.protobuf.Struct payload = 14;
+}
+
+message GetStateRequest {
+  string twin_id = 1;
+  google.protobuf.Timestamp as_of_valid_time = 2;
+  google.protobuf.Timestamp as_of_recorded_time = 3;
+  int64 up_to_sequence = 4;
+}
+
+message TwinState {
+  string twin_id = 1;
+  int64 sequence = 2;
+  string event_hash = 3;
+  repeated google.protobuf.Struct cells = 4;
+  repeated string degraded_reasons = 5;
+}
+
+message CompileProjectionRequest {
+  string request_id = 1;
+  string twin_id = 2;
+  string subject_id = 3;
+  string recipient_id = 4;
+  string purpose = 5;
+  repeated string requested_fields = 6;
+  string maximum_sensitivity = 7;
+  google.protobuf.Timestamp as_of_valid_time = 8;
+  google.protobuf.Timestamp as_of_recorded_time = 9;
+  int64 expected_sequence = 10;
+  string idempotency_key = 11;
+}
+
+message ProjectionResponse {
+  google.protobuf.Struct artifact = 1;
+  ProjectionReceipt receipt = 2;
+}
+
+message ProjectionReceipt {
+  string projection_id = 1;
+  string request_id = 2;
+  string consent_id = 3;
+  string policy_version = 4;
+  google.protobuf.Timestamp issued_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  int64 source_sequence = 7;
+  repeated string disclosed_fields = 8;
+  string artifact_hash = 9;
+}
+
+message RevokeProjectionRequest {
+  string twin_id = 1;
+  string projection_id = 2;
+  string reason = 3;
+  int64 expected_sequence = 4;
+  string idempotency_key = 5;
+}
+
+message ForkSimulationRequest {
+  string twin_id = 1;
+  int64 base_sequence = 2;
+  string scenario = 3;
+}
+
+message AppendSimulationRequest {
+  string branch_id = 1;
+  string twin_id = 2;
+  string event_type = 3;
+  google.protobuf.Struct predicted_state = 4;
+  string idempotency_key = 5;
+}
+
+message SimulationBranch {
+  string branch_id = 1;
+  string twin_id = 2;
+  int64 base_sequence = 3;
+  string scenario = 4;
+  repeated TwinEvent events = 5;
+  google.protobuf.Struct predicted_state = 6;
+}
+
+message PromotionRequest {
+  string branch_id = 1;
+  string twin_id = 2;
+  string rationale = 3;
+}
+
+message ReviewReferral {
+  string referral_id = 1;
+  string status = 2;
+  bool requires_human_review = 3;
+}
+
+message ActionEnvelope {
+  string action_id = 1;
+  string principal_id = 2;
+  string actor_identity_id = 3;
+  string purpose = 4;
+  string target = 5;
+  repeated string requested_capabilities = 6;
+  string impact = 7;
+  bool reversible = 8;
+  repeated string evidence_ids = 9;
+  string constraint_version = 10;
+  string idempotency_key = 11;
+  google.protobuf.Timestamp issued_at = 12;
+  google.protobuf.Timestamp expires_at = 13;
+}
+
+message CheckActionRequest {
+  ActionEnvelope action = 1;
+}
+
+message PolicyDecision {
+  bool allowed = 1;
+  repeated string reasons = 2;
+  string policy_version = 3;
+  string decision_id = 4;
+}
+
+message HealthResponse {
+  string status = 1;
+  string version = 2;
+  int64 event_store_lag = 3;
+  repeated string degraded_dependencies = 4;
+}
+
