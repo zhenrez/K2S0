@@ -7,7 +7,7 @@ demo:
 	PYTHONPATH=src python3 -m argo_dt.cli demo
 
 contracts:
-	@for file in schemas/*.json; do python3 -m json.tool "$$file" >/dev/null; done
+	PYTHONPATH=src python3 scripts/validate_contracts.py
 
 lint:
 	python3 -m ruff check src tests

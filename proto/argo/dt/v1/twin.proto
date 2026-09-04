@@ -87,6 +87,7 @@ message TwinEvent {
   string previous_hash = 12;
   string event_hash = 13;
   google.protobuf.Struct payload = 14;
+  string producer_role = 15;
 }
 
 message GetStateRequest {
@@ -119,7 +120,7 @@ message CompileProjectionRequest {
 }
 
 message ProjectionResponse {
-  google.protobuf.Struct artifact = 1;
+  google.protobuf.Struct projection = 1;
   ProjectionReceipt receipt = 2;
 }
 
@@ -211,4 +212,3 @@ message HealthResponse {
   int64 event_store_lag = 3;
   repeated string degraded_dependencies = 4;
 }
-

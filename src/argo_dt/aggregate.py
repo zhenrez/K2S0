@@ -102,6 +102,10 @@ class TwinAggregate:
         payload = event.payload
         if not event.twin_id or not event.producer or not event.idempotency_key:
             raise InvariantViolation("event twin_id, producer, and idempotency_key are required")
+        if event.schema_version not in {"argo.dt.event/v1", "argo.dt.event/v2"}:
+            raise InvariantViolation("unsupported event schema version")
+        if event.schema_version == "argo.dt.event/v1" and event.sequence == 0:
+            raise InvariantViolation("new writes must use EventEnvelope v2")
         if event.occurred_at.tzinfo is None:
             raise InvariantViolation("event occurred_at must be timezone-aware")
         if event.plane is EventPlane.PROJECTION and event.event_type not in (

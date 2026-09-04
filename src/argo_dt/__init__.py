@@ -7,6 +7,7 @@ from .policy import DefaultDenyPolicy
 from .service import DigitalTwinService
 from .types import (
     ARGOCell,
+    ActorContext,
     ActionEnvelope,
     BitemporalInterval,
     ConsentGrant,
@@ -16,11 +17,13 @@ from .types import (
     IdentityKind,
     ProjectionRequest,
     ProjectionReceipt,
+    ProducerRole,
     Sensitivity,
 )
 
 __all__ = [
     "ARGOCell",
+    "ActorContext",
     "ActionEnvelope",
     "BitemporalInterval",
     "ConsentGrant",
@@ -33,9 +36,9 @@ __all__ = [
     "ProjectionCompiler",
     "ProjectionReceipt",
     "ProjectionRequest",
+    "ProducerRole",
     "SQLiteEventStore",
     "Sensitivity",
     "TwinAggregate",
     "TwinState",
 ]
-

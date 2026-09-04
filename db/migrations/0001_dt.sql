@@ -44,6 +44,13 @@ CREATE TABLE dt.events (
     valid_time tstzrange NOT NULL,
     recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     producer_identity_id uuid NOT NULL,
+    producer_role text NOT NULL CHECK (
+        producer_role IN (
+            'ingest_service', 'identity_worker', 'adjudication_worker',
+            'human_review', 'compiler', 'projection_service',
+            'simulation_service', 'downstream_agent', 'operations_service'
+        )
+    ),
     idempotency_key text NOT NULL,
     causation_id uuid,
     correlation_id uuid,
@@ -196,4 +203,3 @@ CREATE POLICY subject_snapshot_isolation ON dt.snapshots
 
 REVOKE ALL ON SCHEMA dt FROM PUBLIC;
 REVOKE ALL ON ALL TABLES IN SCHEMA dt FROM PUBLIC;
-

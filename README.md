@@ -89,6 +89,7 @@ checking tools are listed under the dev extra.
 ## Start here
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Invariant registry](docs/INVARIANTS.md)
 - [Integration blueprint](docs/INTEGRATION_BLUEPRINT.md)
 - [Host merge contract](docs/MERGE_CONTRACT.md)
 - [Reference repository map](docs/REPOSITORY_PATTERN_MAP.md)

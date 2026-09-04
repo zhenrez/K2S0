@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0 — 2026-09-04
+
+- Added authenticated actor contexts and a default-deny event ownership
+  matrix, with producer identity and role persisted in EventEnvelope v2.
+- Preserved EventEnvelope v1 hash/replay compatibility through unique-owner
+  inference while refusing security-downgrade writes using the legacy schema.
+- Added 20 stable invariant identifiers with machine-verified ownership and
+  executable evidence links.
+- Added immutable v1 replay and negative-boundary fixtures covering temporal
+  correction, supersession, contradiction, deletion, revoked consent,
+  projection revocation, and simulation contamination attempts.
+- Made canonical serialization deterministic for set-like values.
+- Added cross-contract CI validation for JSON Schema, OpenAPI, protobuf, and
+  PostgreSQL definitions.
+
 ## 0.1.0 — 2026-09-04
 
 - Added K2S0 Digital Twin reference kernel.

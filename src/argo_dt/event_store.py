@@ -8,7 +8,15 @@ import threading
 from pathlib import Path
 
 from .errors import ConcurrencyConflict, IntegrityError, InvariantViolation
-from .types import EventEnvelope, EventPlane, canonical_json, parse_time, utc_now
+from .ownership import sole_event_owner
+from .types import (
+    EventEnvelope,
+    EventPlane,
+    ProducerRole,
+    canonical_json,
+    parse_time,
+    utc_now,
+)
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS dt_events (
@@ -22,6 +30,7 @@ CREATE TABLE IF NOT EXISTS dt_events (
     occurred_at TEXT NOT NULL,
     recorded_at TEXT NOT NULL,
     producer TEXT NOT NULL,
+    producer_role TEXT NOT NULL,
     idempotency_key TEXT NOT NULL,
     causation_id TEXT,
     correlation_id TEXT,
@@ -59,6 +68,41 @@ class SQLiteEventStore:
             self._connection.execute("PRAGMA journal_mode = WAL")
             self._connection.execute("PRAGMA synchronous = FULL")
             self._connection.executescript(_DDL)
+            self._migrate_legacy_producer_roles()
+
+    def _migrate_legacy_producer_roles(self) -> None:
+        columns = {
+            str(row["name"])
+            for row in self._connection.execute("PRAGMA table_info(dt_events)")
+        }
+        if "producer_role" in columns:
+            return
+        cursor = self._connection.cursor()
+        try:
+            cursor.execute("BEGIN IMMEDIATE")
+            cursor.execute("ALTER TABLE dt_events ADD COLUMN producer_role TEXT")
+            event_types = cursor.execute(
+                "SELECT DISTINCT event_type FROM dt_events"
+            ).fetchall()
+            for row in event_types:
+                event_type = str(row["event_type"])
+                role = sole_event_owner(event_type)
+                cursor.execute(
+                    "UPDATE dt_events SET producer_role = ? WHERE event_type = ?",
+                    (role.value, event_type),
+                )
+            unresolved = cursor.execute(
+                "SELECT COUNT(*) AS count FROM dt_events WHERE producer_role IS NULL"
+            ).fetchone()
+            if unresolved is not None and int(unresolved["count"]) != 0:
+                raise IntegrityError("legacy producer-role migration was incomplete")
+            cursor.execute("COMMIT")
+        except Exception:
+            if self._connection.in_transaction:
+                cursor.execute("ROLLBACK")
+            raise
+        finally:
+            cursor.close()
 
     def close(self) -> None:
         with self._lock:
@@ -75,6 +119,7 @@ class SQLiteEventStore:
             occurred_at=parse_time(row["occurred_at"]),
             recorded_at=parse_time(row["recorded_at"]),
             producer=row["producer"],
+            producer_role=ProducerRole(row["producer_role"]),
             idempotency_key=row["idempotency_key"],
             schema_version=row["schema_version"],
             sequence=int(row["sequence"]),
@@ -85,6 +130,8 @@ class SQLiteEventStore:
         )
 
     def append(self, event: EventEnvelope, *, expected_sequence: int) -> EventEnvelope:
+        if event.schema_version != "argo.dt.event/v2":
+            raise InvariantViolation("new event-store writes require EventEnvelope v2")
         with self._lock:
             cursor = self._connection.cursor()
             try:
@@ -103,6 +150,7 @@ class SQLiteEventStore:
                         or existing.plane is not event.plane
                         or canonical_json(existing.payload) != canonical_json(event.payload)
                         or existing.producer != event.producer
+                        or existing.producer_role is not event.producer_role
                         or existing.schema_version != event.schema_version
                         or existing.causation_id != event.causation_id
                         or existing.correlation_id != event.correlation_id
@@ -138,9 +186,9 @@ class SQLiteEventStore:
                     INSERT INTO dt_events (
                         twin_id, sequence, event_id, event_type, plane,
                         schema_version, payload_json, occurred_at, recorded_at,
-                        producer, idempotency_key, causation_id, correlation_id,
+                        producer, producer_role, idempotency_key, causation_id, correlation_id,
                         previous_hash, event_hash
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         sealed.twin_id,
@@ -153,6 +201,7 @@ class SQLiteEventStore:
                         sealed.occurred_at.isoformat(),
                         sealed.recorded_at.isoformat(),
                         sealed.producer,
+                        sealed.producer_role.value,
                         sealed.idempotency_key,
                         sealed.causation_id,
                         sealed.correlation_id,

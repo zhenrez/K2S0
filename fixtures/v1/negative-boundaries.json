@@ -1,0 +1,25 @@
+{
+  "fixture_version": "argo.dt.fixture/v1",
+  "revoked_consent": {
+    "consent_id": "77777777-7777-4777-8777-777777777777",
+    "subject_id": "22222222-2222-4222-8222-222222222222",
+    "recipient_id": "questn-fixture",
+    "purposes": ["decision-support"],
+    "allowed_fields": ["decision_model"],
+    "max_sensitivity": "internal",
+    "valid_from": "2025-01-01T00:00:00Z",
+    "valid_until": "2030-01-01T00:00:00Z",
+    "policy_version": "constitution/v1",
+    "revoked_at": "2026-01-01T00:00:00Z"
+  },
+  "simulation_store_attempt": {
+    "twin_id": "11111111-1111-4111-8111-111111111111",
+    "subject_id": "22222222-2222-4222-8222-222222222222",
+    "event_type": "ScenarioStatePredicted",
+    "producer": "simulation-fixture",
+    "producer_role": "simulation_service",
+    "idempotency_key": "negative-simulation-store",
+    "predicted_state": {"readiness": "counterfactual"},
+    "expected_error": "simulation events belong to SimulationBranch"
+  }
+}
