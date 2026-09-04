@@ -7,9 +7,9 @@ Date: 2026-09-04 UTC
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant tests | 24/24 passed |
+| Invariant tests | 33/33 passed |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
-| JSON contracts | All four JSON Schema files parsed successfully |
+| JSON contracts | All five JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
 | Event integrity | Hash-chain verification passed |
 | Package metadata | setuptools 84.0.0 is available; source-layout metadata is defined |
@@ -40,11 +40,17 @@ Covered tests:
 - projection loss-report privacy;
 - idempotent retries without duplicate event publication;
 - terminal slow-consumer behavior without a blocking retry.
+- default-deny event ownership and authenticated producer matching;
+- deterministic canonical serialization of unordered collections;
+- golden replay compatibility across correction, contradiction, deletion,
+  supersession, and projection revocation;
+- negative fixtures for revoked consent and simulation contamination;
+- invariant registry ownership and executable-evidence completeness.
 
 ## Local smoke benchmark
 
 The SQLite reference adapter appended and verified 10,000 events at
-approximately 9,795 events/second in this ephemeral environment.
+approximately 10,000 events/second in this ephemeral environment.
 
 This is not a production capacity result. It excludes network, authentication,
 Bronze object I/O, PostgreSQL replication, outbox publication, contention,

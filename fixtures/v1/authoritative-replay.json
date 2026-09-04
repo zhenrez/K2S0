@@ -1,0 +1,447 @@
+{
+  "description": "Golden replay: contradiction, deletion, projection revocation, and correction/supersession.",
+  "events": [
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:855c1636c0ec99d0888a829bf5f389f5331dcf4dbc5aba65045240a54b497056",
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "event_type": "EvidenceIngested",
+      "idempotency_key": "fixture-01",
+      "occurred_at": "2026-01-01T00:01:00Z",
+      "payload": {
+        "content_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "evidence_id": "33333333-3333-4333-8333-333333333331",
+        "independence_group": "session-1",
+        "normalized_payload": {
+          "text": "prefers reversible trials"
+        },
+        "rights": {
+          "processing": [
+            "modeling"
+          ]
+        },
+        "sensitivity": "internal",
+        "source": "fixture",
+        "source_record_id": "source-1",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-01T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "",
+      "producer": "ingest-fixture",
+      "producer_role": "ingest_service",
+      "recorded_at": "2026-01-01T00:01:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 1,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:0fed34d84f51916e6630b798bbe1d83202965553b8a1b639ea8916c0e306e7c0",
+      "event_id": "00000000-0000-4000-8000-000000000002",
+      "event_type": "ClaimProposed",
+      "idempotency_key": "fixture-02",
+      "occurred_at": "2026-01-01T00:02:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444441",
+        "epistemic": {
+          "confidence": 0.8,
+          "contradiction_load": 0.1,
+          "evidence_quality": 0.9,
+          "freshness": 0.9,
+          "salience": 0.7,
+          "scope_confidence": 0.8,
+          "stability": 0.6
+        },
+        "kind": "decision_heuristic",
+        "model_trace": {},
+        "provenance": [
+          {
+            "evidence_id": "33333333-3333-4333-8333-333333333331",
+            "independence_group": "session-1",
+            "relation": "supports"
+          }
+        ],
+        "review_state": "unreviewed",
+        "sensitivity": "internal",
+        "statement": "Prefers reversible trials.",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-01T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:855c1636c0ec99d0888a829bf5f389f5331dcf4dbc5aba65045240a54b497056",
+      "producer": "adjudication-fixture",
+      "producer_role": "adjudication_worker",
+      "recorded_at": "2026-01-01T00:02:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 2,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:0e3744712ba7dfffdb2aca15a4522e919ce83ef12a45c394f9bb815625ade052",
+      "event_id": "00000000-0000-4000-8000-000000000003",
+      "event_type": "ClaimAccepted",
+      "idempotency_key": "fixture-03",
+      "occurred_at": "2026-01-01T00:03:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444441",
+        "rationale": "confirmed",
+        "reviewer_identity_id": "22222222-2222-4222-8222-222222222222"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:0fed34d84f51916e6630b798bbe1d83202965553b8a1b639ea8916c0e306e7c0",
+      "producer": "review-fixture",
+      "producer_role": "human_review",
+      "recorded_at": "2026-01-01T00:03:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 3,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:641428cb005e703f3d4a1810d4f05d7daa893b16a640ec5f65cf2fadf07c14a4",
+      "event_id": "00000000-0000-4000-8000-000000000004",
+      "event_type": "EvidenceIngested",
+      "idempotency_key": "fixture-04",
+      "occurred_at": "2026-01-01T00:04:00Z",
+      "payload": {
+        "content_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "evidence_id": "33333333-3333-4333-8333-333333333332",
+        "independence_group": "session-2",
+        "normalized_payload": {
+          "text": "counterexample"
+        },
+        "rights": {
+          "processing": [
+            "modeling"
+          ]
+        },
+        "sensitivity": "internal",
+        "source": "fixture",
+        "source_record_id": "source-2",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-02T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:0e3744712ba7dfffdb2aca15a4522e919ce83ef12a45c394f9bb815625ade052",
+      "producer": "ingest-fixture",
+      "producer_role": "ingest_service",
+      "recorded_at": "2026-01-01T00:04:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 4,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:03627452fe8309ff4f9dbf4fb5b141cd56701b59edcbd88d7580a3c6842d6325",
+      "event_id": "00000000-0000-4000-8000-000000000005",
+      "event_type": "ClaimProposed",
+      "idempotency_key": "fixture-05",
+      "occurred_at": "2026-01-01T00:05:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444442",
+        "epistemic": {
+          "confidence": 0.4,
+          "contradiction_load": 0.8,
+          "evidence_quality": 0.9,
+          "freshness": 0.9,
+          "salience": 0.7,
+          "scope_confidence": 0.8,
+          "stability": 0.6
+        },
+        "kind": "decision_heuristic",
+        "model_trace": {},
+        "provenance": [
+          {
+            "evidence_id": "33333333-3333-4333-8333-333333333332",
+            "independence_group": "session-2",
+            "relation": "supports"
+          }
+        ],
+        "review_state": "unreviewed",
+        "sensitivity": "internal",
+        "statement": "Prefers irreversible commitments.",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-02T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:641428cb005e703f3d4a1810d4f05d7daa893b16a640ec5f65cf2fadf07c14a4",
+      "producer": "adjudication-fixture",
+      "producer_role": "adjudication_worker",
+      "recorded_at": "2026-01-01T00:05:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 5,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:99714069fbdeb8bb91b7aa55241fc666341dcf7c3e46ec1172071d6b2f5716db",
+      "event_id": "00000000-0000-4000-8000-000000000006",
+      "event_type": "ClaimContested",
+      "idempotency_key": "fixture-06",
+      "occurred_at": "2026-01-01T00:06:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444442",
+        "rationale": "context-specific counterexample",
+        "reviewer_identity_id": "22222222-2222-4222-8222-222222222222"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:03627452fe8309ff4f9dbf4fb5b141cd56701b59edcbd88d7580a3c6842d6325",
+      "producer": "review-fixture",
+      "producer_role": "human_review",
+      "recorded_at": "2026-01-01T00:06:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 6,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:20188dfbfe3731890352f010814bba7b683bf6dd7a0d4b5889f43ba44bf1811f",
+      "event_id": "00000000-0000-4000-8000-000000000007",
+      "event_type": "ContradictionDetected",
+      "idempotency_key": "fixture-07",
+      "occurred_at": "2026-01-01T00:07:00Z",
+      "payload": {
+        "claim_ids": [
+          "44444444-4444-4444-8444-444444444441",
+          "44444444-4444-4444-8444-444444444442"
+        ],
+        "contradiction_id": "66666666-6666-4666-8666-666666666666",
+        "status": "open"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:99714069fbdeb8bb91b7aa55241fc666341dcf7c3e46ec1172071d6b2f5716db",
+      "producer": "adjudication-fixture",
+      "producer_role": "adjudication_worker",
+      "recorded_at": "2026-01-01T00:07:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 7,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:e33cb9f1c0683df5030a467b7b5662d0694bba5911c8eb8bef1a9173764b1e25",
+      "event_id": "00000000-0000-4000-8000-000000000008",
+      "event_type": "EvidenceDeleted",
+      "idempotency_key": "fixture-08",
+      "occurred_at": "2026-01-01T00:08:00Z",
+      "payload": {
+        "evidence_id": "33333333-3333-4333-8333-333333333331",
+        "reason": "source deletion request"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:20188dfbfe3731890352f010814bba7b683bf6dd7a0d4b5889f43ba44bf1811f",
+      "producer": "ingest-fixture",
+      "producer_role": "ingest_service",
+      "recorded_at": "2026-01-01T00:08:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 8,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:6c5bacc511ae5fe8862f660dd2251c0bdafd95d3307fea074bd7f003f41c5d17",
+      "event_id": "00000000-0000-4000-8000-000000000009",
+      "event_type": "ProjectionIssued",
+      "idempotency_key": "fixture-09",
+      "occurred_at": "2026-01-01T00:09:00Z",
+      "payload": {
+        "disclosed_fields": [
+          "decision_model"
+        ],
+        "projection_id": "55555555-5555-4555-8555-555555555555",
+        "purpose": "fixture-compatibility",
+        "receipt_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "recipient_id": "questn-fixture",
+        "source_sequence": 7
+      },
+      "plane": "projection",
+      "previous_hash": "sha256:e33cb9f1c0683df5030a467b7b5662d0694bba5911c8eb8bef1a9173764b1e25",
+      "producer": "projection-fixture",
+      "producer_role": "projection_service",
+      "recorded_at": "2026-01-01T00:09:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 9,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:835f526ddf5c8043c82dd4950f0495e95a0ad8b3c7f102ea830c9be55edd08d5",
+      "event_id": "00000000-0000-4000-8000-000000000010",
+      "event_type": "ProjectionRevoked",
+      "idempotency_key": "fixture-10",
+      "occurred_at": "2026-01-01T00:10:00Z",
+      "payload": {
+        "actor_identity_id": "22222222-2222-4222-8222-222222222222",
+        "projection_id": "55555555-5555-4555-8555-555555555555",
+        "reason": "consent withdrawn"
+      },
+      "plane": "projection",
+      "previous_hash": "sha256:6c5bacc511ae5fe8862f660dd2251c0bdafd95d3307fea074bd7f003f41c5d17",
+      "producer": "projection-fixture",
+      "producer_role": "projection_service",
+      "recorded_at": "2026-01-01T00:10:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 10,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:1d9139f100c78dbb0279a5bd009e64931af6b5c613b1bed01f64752043ce105a",
+      "event_id": "00000000-0000-4000-8000-000000000011",
+      "event_type": "EvidenceIngested",
+      "idempotency_key": "fixture-11",
+      "occurred_at": "2026-01-01T00:11:00Z",
+      "payload": {
+        "content_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "evidence_id": "33333333-3333-4333-8333-333333333333",
+        "independence_group": "session-3",
+        "normalized_payload": {
+          "text": "corrected preference"
+        },
+        "rights": {
+          "processing": [
+            "modeling"
+          ]
+        },
+        "sensitivity": "internal",
+        "source": "fixture",
+        "source_record_id": "source-3",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-03T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:835f526ddf5c8043c82dd4950f0495e95a0ad8b3c7f102ea830c9be55edd08d5",
+      "producer": "ingest-fixture",
+      "producer_role": "ingest_service",
+      "recorded_at": "2026-01-01T00:11:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 11,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:8083ca953eeb524420736716f55b64700806b21b81112edaf937c11a1a24a5a0",
+      "event_id": "00000000-0000-4000-8000-000000000012",
+      "event_type": "ClaimProposed",
+      "idempotency_key": "fixture-12",
+      "occurred_at": "2026-01-01T00:12:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444443",
+        "epistemic": {
+          "confidence": 0.9,
+          "contradiction_load": 0.1,
+          "evidence_quality": 0.9,
+          "freshness": 0.9,
+          "salience": 0.7,
+          "scope_confidence": 0.9,
+          "stability": 0.6
+        },
+        "kind": "decision_heuristic",
+        "model_trace": {},
+        "provenance": [
+          {
+            "evidence_id": "33333333-3333-4333-8333-333333333333",
+            "independence_group": "session-3",
+            "relation": "supports"
+          }
+        ],
+        "review_state": "unreviewed",
+        "sensitivity": "internal",
+        "statement": "Usually prefers reversible trials when uncertainty is material.",
+        "subject_id": "22222222-2222-4222-8222-222222222222",
+        "valid_from": "2026-01-03T00:00:00+00:00",
+        "valid_until": null
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:1d9139f100c78dbb0279a5bd009e64931af6b5c613b1bed01f64752043ce105a",
+      "producer": "adjudication-fixture",
+      "producer_role": "adjudication_worker",
+      "recorded_at": "2026-01-01T00:12:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 12,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:1ee31c72469fb2587cab673043cb95e06672c12d4ffe525c0e567ac4cd582cf6",
+      "event_id": "00000000-0000-4000-8000-000000000013",
+      "event_type": "ClaimAccepted",
+      "idempotency_key": "fixture-13",
+      "occurred_at": "2026-01-01T00:13:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444443",
+        "rationale": "corrected and scoped",
+        "reviewer_identity_id": "22222222-2222-4222-8222-222222222222"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:8083ca953eeb524420736716f55b64700806b21b81112edaf937c11a1a24a5a0",
+      "producer": "review-fixture",
+      "producer_role": "human_review",
+      "recorded_at": "2026-01-01T00:13:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 13,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "event_hash": "sha256:be2e5cea66a14bbc263949ecd1e36b0665d221e3de3bdd7ca4f80400c666d856",
+      "event_id": "00000000-0000-4000-8000-000000000014",
+      "event_type": "ClaimSuperseded",
+      "idempotency_key": "fixture-14",
+      "occurred_at": "2026-01-01T00:14:00Z",
+      "payload": {
+        "claim_id": "44444444-4444-4444-8444-444444444441",
+        "rationale": "correction",
+        "successor_claim_id": "44444444-4444-4444-8444-444444444443"
+      },
+      "plane": "authoritative",
+      "previous_hash": "sha256:1ee31c72469fb2587cab673043cb95e06672c12d4ffe525c0e567ac4cd582cf6",
+      "producer": "review-fixture",
+      "producer_role": "human_review",
+      "recorded_at": "2026-01-01T00:14:00Z",
+      "schema_version": "argo.dt.event/v2",
+      "sequence": 14,
+      "twin_id": "11111111-1111-4111-8111-111111111111"
+    }
+  ],
+  "expected_state": {
+    "accepted_claim_ids": [
+      "44444444-4444-4444-8444-444444444443"
+    ],
+    "contested_claim_ids": [
+      "44444444-4444-4444-8444-444444444442"
+    ],
+    "last_event_hash": "sha256:be2e5cea66a14bbc263949ecd1e36b0665d221e3de3bdd7ca4f80400c666d856",
+    "revoked_projection_ids": [
+      "55555555-5555-4555-8555-555555555555"
+    ],
+    "sequence": 14,
+    "stale_claim_ids": [
+      "44444444-4444-4444-8444-444444444441"
+    ],
+    "subject_id": "22222222-2222-4222-8222-222222222222",
+    "twin_id": "11111111-1111-4111-8111-111111111111"
+  },
+  "fixture_version": "argo.dt.fixture/v1"
+}

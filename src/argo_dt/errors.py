@@ -21,10 +21,13 @@ class PolicyDenied(DigitalTwinError):
     """A policy decision denied disclosure or action."""
 
 
+class AuthorizationDenied(DigitalTwinError):
+    """An authenticated actor does not own the requested event transition."""
+
+
 class BackpressureExceeded(DigitalTwinError):
     """A real-time subscriber could not keep up safely."""
 
 
 class NotFound(DigitalTwinError):
     """A requested Digital Twin object does not exist."""
-

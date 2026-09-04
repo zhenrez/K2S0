@@ -40,8 +40,20 @@ def to_primitive(value: Any) -> Any:
         return {key: to_primitive(item) for key, item in asdict(value).items()}
     if isinstance(value, Mapping):
         return {str(key): to_primitive(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple, set, frozenset)):
+    if isinstance(value, (list, tuple)):
         return [to_primitive(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        converted = [to_primitive(item) for item in value]
+        return sorted(
+            converted,
+            key=lambda item: json.dumps(
+                item,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ),
+        )
     return value
 
 
@@ -70,6 +82,35 @@ class EventPlane(StrEnum):
     AUTHORITATIVE = "authoritative"
     PROJECTION = "projection"
     SIMULATION = "simulation"
+
+
+class ProducerRole(StrEnum):
+    INGEST_SERVICE = "ingest_service"
+    IDENTITY_WORKER = "identity_worker"
+    ADJUDICATION_WORKER = "adjudication_worker"
+    HUMAN_REVIEW = "human_review"
+    COMPILER = "compiler"
+    PROJECTION_SERVICE = "projection_service"
+    SIMULATION_SERVICE = "simulation_service"
+    DOWNSTREAM_AGENT = "downstream_agent"
+    OPERATIONS_SERVICE = "operations_service"
+
+
+@dataclass(frozen=True, slots=True)
+class ActorContext:
+    """Identity claims supplied by a trusted authentication adapter."""
+
+    identity_id: str
+    roles: frozenset[ProducerRole]
+    subject_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.identity_id:
+            raise InvariantViolation("actor identity_id is required")
+        if not self.roles:
+            raise InvariantViolation("actor requires at least one producer role")
+        if any(not isinstance(role, ProducerRole) for role in self.roles):
+            raise InvariantViolation("actor roles must be ProducerRole values")
 
 
 class Sensitivity(StrEnum):
@@ -229,13 +270,20 @@ class EventEnvelope:
     occurred_at: datetime
     recorded_at: datetime
     producer: str
+    producer_role: ProducerRole
     idempotency_key: str
-    schema_version: str = "argo.dt.event/v1"
+    schema_version: str = "argo.dt.event/v2"
     sequence: int = 0
     causation_id: str | None = None
     correlation_id: str | None = None
     previous_hash: str = ""
     event_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plane, EventPlane):
+            raise InvariantViolation("event plane must be an EventPlane value")
+        if not isinstance(self.producer_role, ProducerRole):
+            raise InvariantViolation("event producer_role must be a ProducerRole value")
 
     @classmethod
     def new(
@@ -246,6 +294,7 @@ class EventEnvelope:
         plane: EventPlane,
         payload: Mapping[str, Any],
         producer: str,
+        producer_role: ProducerRole,
         idempotency_key: str,
         occurred_at: datetime | None = None,
         causation_id: str | None = None,
@@ -261,6 +310,7 @@ class EventEnvelope:
             occurred_at=occurred_at or now,
             recorded_at=now,
             producer=producer,
+            producer_role=producer_role,
             idempotency_key=idempotency_key,
             causation_id=causation_id,
             correlation_id=correlation_id,
@@ -269,6 +319,8 @@ class EventEnvelope:
     def _hash_material(self) -> JsonObject:
         material = to_primitive(self)
         material.pop("event_hash", None)
+        if self.schema_version == "argo.dt.event/v1":
+            material.pop("producer_role", None)
         return material
 
     def seal(self, *, sequence: int, previous_hash: str, recorded_at: datetime) -> EventEnvelope:

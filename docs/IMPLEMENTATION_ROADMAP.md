@@ -20,7 +20,12 @@ architecture. Each phase adds executable capability behind stable ports.
 
 ### DT-0
 
-- Freeze ARGOCell v1 and EventEnvelope v1 semantics.
+Status: complete in 0.2.0 for the standalone reference boundary. Host-language
+generation and host-specific invariant ownership remain conditional on the
+actual ecosystem repository becoming available.
+
+- Freeze ARGOCell v1 and secured EventEnvelope v2 semantics; preserve v1
+  replay/hash compatibility through the explicit upcaster.
 - Convert every invariant in the K2S0 packet into a test identifier.
 - Add JSON Schema, protobuf, OpenAPI, SQL migration, and policy bundle checks.
 - Define event ownership matrix and identity/capability claims.
@@ -135,4 +140,3 @@ invariants.
 6. Connect one HPI-style export source and one Screenpipe-style live source.
 7. Expose one QuestN review flow and one MARC-1 read-only projection.
 8. Measure and record baseline latency/throughput before optimization.
-

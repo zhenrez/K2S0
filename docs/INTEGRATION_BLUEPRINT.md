@@ -138,6 +138,7 @@ explicitly listed.
 | --- | --- |
 | twin_id + sequence | Per-twin total order |
 | event_id | Unique event identity |
+| producer + producer_role | Authenticated identity and hash-covered owner role |
 | idempotency_key | Unique within twin; retries return original result |
 | occurred_at | Source/valid occurrence time |
 | recorded_at | Ledger commit time |
@@ -241,4 +242,3 @@ not the person model.
 - Prompt/model/compiler changes produce a new artifact version.
 - CI maintains golden fixtures for previous two schema minors and migration
   tests for every supported major.
-

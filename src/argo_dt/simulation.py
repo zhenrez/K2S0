@@ -8,7 +8,8 @@ from typing import Any, Mapping
 
 from .aggregate import TwinState
 from .errors import InvariantViolation
-from .types import EventEnvelope, EventPlane
+from .ownership import EventOwnershipPolicy
+from .types import ActorContext, EventEnvelope, EventPlane
 
 
 @dataclass(slots=True)
@@ -20,7 +21,8 @@ class SimulationBranch:
     events: list[EventEnvelope] = field(default_factory=list)
     predicted_state: dict[str, Any] = field(default_factory=dict)
 
-    def append(self, event: EventEnvelope) -> None:
+    def append(self, event: EventEnvelope, *, actor: ActorContext) -> None:
+        EventOwnershipPolicy().authorize(event, actor)
         if event.plane is not EventPlane.SIMULATION:
             raise InvariantViolation("simulation branch accepts simulation-plane events only")
         if event.twin_id != self.twin_id:
@@ -54,4 +56,3 @@ class SimulationEngine:
             "requires_human_review": True,
             "may_not_be_used_as_evidence": True,
         }
-

@@ -13,7 +13,14 @@ from .compiler import ProjectionCompiler
 from .event_store import SQLiteEventStore
 from .policy import DefaultDenyPolicy
 from .service import DigitalTwinService
-from .types import ConsentGrant, ProjectionRequest, Sensitivity, to_primitive
+from .types import (
+    ActorContext,
+    ConsentGrant,
+    ProducerRole,
+    ProjectionRequest,
+    Sensitivity,
+    to_primitive,
+)
 
 
 async def _demo() -> None:
@@ -24,6 +31,25 @@ async def _demo() -> None:
             projection_compiler=ProjectionCompiler(DefaultDenyPolicy()),
         )
         now = datetime.now(UTC)
+        ingest_actor = ActorContext(
+            "ingest-demo",
+            frozenset({ProducerRole.INGEST_SERVICE}),
+            subject_id="human-demo",
+        )
+        adjudication_actor = ActorContext(
+            "adjudication-demo",
+            frozenset({ProducerRole.ADJUDICATION_WORKER}),
+            subject_id="human-demo",
+        )
+        reviewer_actor = ActorContext(
+            "human-demo",
+            frozenset({ProducerRole.HUMAN_REVIEW}),
+            subject_id="human-demo",
+        )
+        projection_actor = ActorContext(
+            "projection-demo",
+            frozenset({ProducerRole.PROJECTION_SERVICE}),
+        )
         evidence = await service.ingest_evidence(
             twin_id="twin-demo",
             subject_id="human-demo",
@@ -37,6 +63,7 @@ async def _demo() -> None:
             independence_group="demo-session-1",
             expected_sequence=0,
             idempotency_key="demo-evidence-1",
+            actor=ingest_actor,
         )
         claim = await service.propose_claim(
             twin_id="twin-demo",
@@ -64,15 +91,16 @@ async def _demo() -> None:
             },
             expected_sequence=1,
             idempotency_key="demo-claim-1",
+            actor=adjudication_actor,
         )
         await service.review_claim(
             twin_id="twin-demo",
             claim_id=str(claim.payload["claim_id"]),
             accepted=True,
-            reviewer_identity_id="human-demo",
             rationale="Accurate but intentionally scoped.",
             expected_sequence=2,
             idempotency_key="demo-review-1",
+            actor=reviewer_actor,
         )
         consent = ConsentGrant(
             consent_id=str(uuid.uuid4()),
@@ -101,6 +129,7 @@ async def _demo() -> None:
             consent=consent,
             expected_sequence=3,
             idempotency_key="demo-projection-1",
+            actor=projection_actor,
         )
         print(
             json.dumps(
@@ -123,4 +152,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

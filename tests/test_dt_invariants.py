@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 from argo_dt.compiler import ProjectionCompiler
 from argo_dt.errors import (
+    AuthorizationDenied,
     BackpressureExceeded,
     ConcurrencyConflict,
     InvariantViolation,
@@ -19,6 +20,7 @@ from argo_dt.sync import BoundedEventBroker
 from argo_dt.types import (
     ARGOCell,
     ActionEnvelope,
+    ActorContext,
     AuthorityGrant,
     BitemporalInterval,
     ConsentGrant,
@@ -26,6 +28,7 @@ from argo_dt.types import (
     EventEnvelope,
     EventPlane,
     IdentityKind,
+    ProducerRole,
     ProjectionRequest,
     Sensitivity,
     TemporalState,
@@ -95,6 +98,7 @@ class StoreTests(unittest.TestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "test"},
             producer="test",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key=key,
         )
 
@@ -113,6 +117,7 @@ class StoreTests(unittest.TestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "different"},
             producer="test",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key="same-key",
         )
         with self.assertRaises(InvariantViolation):
@@ -124,6 +129,7 @@ class StoreTests(unittest.TestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "test"},
             producer="different-producer",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key="same-key",
         )
         with self.assertRaises(InvariantViolation):
@@ -143,6 +149,34 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             projection_compiler=ProjectionCompiler(DefaultDenyPolicy()),
         )
         self.instant = now()
+        self.ingest_actor = ActorContext(
+            "ingest-test",
+            frozenset({ProducerRole.INGEST_SERVICE}),
+            subject_id="human-1",
+        )
+        self.adjudication_actor = ActorContext(
+            "adjudication-test",
+            frozenset({ProducerRole.ADJUDICATION_WORKER}),
+            subject_id="human-1",
+        )
+        self.reviewer_actor = ActorContext(
+            "human-1",
+            frozenset({ProducerRole.HUMAN_REVIEW}),
+            subject_id="human-1",
+        )
+        self.projection_actor = ActorContext(
+            "projection-test",
+            frozenset({ProducerRole.PROJECTION_SERVICE}),
+        )
+        self.simulation_actor = ActorContext(
+            "simulation-test",
+            frozenset({ProducerRole.SIMULATION_SERVICE}),
+            subject_id="human-1",
+        )
+        self.operations_actor = ActorContext(
+            "operations-test",
+            frozenset({ProducerRole.OPERATIONS_SERVICE}),
+        )
 
     async def asyncTearDown(self) -> None:
         self.store.close()
@@ -161,6 +195,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             independence_group=f"session-{sequence}",
             expected_sequence=sequence,
             idempotency_key=f"evidence-{sequence}",
+            actor=self.ingest_actor,
         )
 
     async def claim(
@@ -189,6 +224,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             epistemic=epistemic(),
             expected_sequence=sequence,
             idempotency_key=f"claim-{sequence}",
+            actor=self.adjudication_actor,
         )
 
     async def accept(self, claim: EventEnvelope, sequence: int) -> EventEnvelope:
@@ -196,10 +232,10 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             twin_id="twin-1",
             claim_id=str(claim.payload["claim_id"]),
             accepted=True,
-            reviewer_identity_id="human-1",
             rationale="verified",
             expected_sequence=sequence,
             idempotency_key=f"accept-{sequence}",
+            actor=self.reviewer_actor,
         )
 
     async def test_claim_without_provenance_is_rejected(self) -> None:
@@ -216,6 +252,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 epistemic={"confidence": 0.1},
                 expected_sequence=0,
                 idempotency_key="unsupported",
+                actor=self.adjudication_actor,
             )
 
     async def test_incomplete_epistemic_vector_is_rejected(self) -> None:
@@ -239,6 +276,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 epistemic={"confidence": 0.7},
                 expected_sequence=1,
                 idempotency_key="incomplete-epistemic",
+                actor=self.adjudication_actor,
             )
 
     async def test_unknown_provenance_is_rejected_before_persistence(self) -> None:
@@ -262,11 +300,16 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 epistemic=epistemic(),
                 expected_sequence=1,
                 idempotency_key="unknown-evidence",
+                actor=self.adjudication_actor,
             )
         self.assertEqual(1, self.store.head("twin-1")[0])
 
     async def test_twin_cannot_mix_subjects(self) -> None:
         await self.ingest()
+        global_ingest_actor = ActorContext(
+            "ingest-global",
+            frozenset({ProducerRole.INGEST_SERVICE}),
+        )
         with self.assertRaises(InvariantViolation):
             await self.service.ingest_evidence(
                 twin_id="twin-1",
@@ -281,6 +324,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 independence_group="session-other",
                 expected_sequence=1,
                 idempotency_key="wrong-subject",
+                actor=global_ingest_actor,
             )
 
     async def test_evidence_identity_is_namespaced_by_twin(self) -> None:
@@ -298,6 +342,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             independence_group="session-0",
             expected_sequence=0,
             idempotency_key="evidence-other-twin",
+            actor=self.ingest_actor,
         )
         self.assertNotEqual(first.payload["evidence_id"], second.payload["evidence_id"])
 
@@ -308,10 +353,19 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"claim_id": "missing"},
             producer="reviewer",
+            producer_role=ProducerRole.HUMAN_REVIEW,
             idempotency_key="invalid-transition",
         )
         with self.assertRaises(InvariantViolation):
-            await self.service.append(invalid, expected_sequence=0)
+            await self.service.append(
+                invalid,
+                actor=ActorContext(
+                    "reviewer",
+                    frozenset({ProducerRole.HUMAN_REVIEW}),
+                    subject_id="human-1",
+                ),
+                expected_sequence=0,
+            )
         self.assertEqual(0, self.store.head("twin-1")[0])
 
     async def test_event_plane_ownership_is_enforced(self) -> None:
@@ -325,22 +379,98 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 "recipient_id": "test",
                 "receipt_hash": "sha256:" + "0" * 64,
             },
-            producer="test",
+            producer=self.projection_actor.identity_id,
+            producer_role=ProducerRole.PROJECTION_SERVICE,
             idempotency_key="wrong-plane",
         )
         with self.assertRaises(InvariantViolation):
-            await self.service.append(wrong_plane, expected_sequence=0)
+            await self.service.append(
+                wrong_plane,
+                actor=self.projection_actor,
+                expected_sequence=0,
+            )
 
         simulation = EventEnvelope.new(
             twin_id="twin-1",
             event_type="ScenarioStatePredicted",
             plane=EventPlane.SIMULATION,
             payload={"predicted_state": {}},
-            producer="simulation-worker",
+            producer=self.simulation_actor.identity_id,
+            producer_role=ProducerRole.SIMULATION_SERVICE,
             idempotency_key="wrong-store",
         )
         with self.assertRaises(InvariantViolation):
-            await self.service.append(simulation, expected_sequence=0)
+            await self.service.append(
+                simulation,
+                actor=self.simulation_actor,
+                expected_sequence=0,
+            )
+
+    async def test_event_ownership_is_default_deny(self) -> None:
+        event = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="EvidenceIngested",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"subject_id": "human-1"},
+            producer=self.operations_actor.identity_id,
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
+            idempotency_key="wrong-owner",
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.append(
+                event,
+                actor=self.operations_actor,
+                expected_sequence=0,
+            )
+
+        unknown = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="UnregisteredMutation",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={},
+            producer=self.operations_actor.identity_id,
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
+            idempotency_key="unknown-event",
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.append(
+                unknown,
+                actor=self.operations_actor,
+                expected_sequence=0,
+            )
+
+        wrong_scope = EventEnvelope.new(
+            twin_id="twin-2",
+            event_type="EvidenceIngested",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"subject_id": "human-2"},
+            producer=self.ingest_actor.identity_id,
+            producer_role=ProducerRole.INGEST_SERVICE,
+            idempotency_key="wrong-actor-subject",
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.append(
+                wrong_scope,
+                actor=self.ingest_actor,
+                expected_sequence=0,
+            )
+
+    async def test_event_producer_must_match_authenticated_actor(self) -> None:
+        event = EventEnvelope.new(
+            twin_id="twin-1",
+            event_type="DegradationDeclared",
+            plane=EventPlane.AUTHORITATIVE,
+            payload={"reason": "test"},
+            producer="spoofed-identity",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
+            idempotency_key="spoofed-producer",
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.append(
+                event,
+                actor=self.operations_actor,
+                expected_sequence=0,
+            )
 
     async def test_evidence_deletion_invalidates_dependent_claim(self) -> None:
         evidence = await self.ingest()
@@ -351,10 +481,15 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             event_type="EvidenceDeleted",
             plane=EventPlane.AUTHORITATIVE,
             payload={"evidence_id": evidence.payload["evidence_id"]},
-            producer="human-1",
+            producer=self.ingest_actor.identity_id,
+            producer_role=ProducerRole.INGEST_SERVICE,
             idempotency_key="delete-1",
         )
-        await self.service.append(deletion, expected_sequence=3)
+        await self.service.append(
+            deletion,
+            actor=self.ingest_actor,
+            expected_sequence=3,
+        )
         state = self.service.state("twin-1")
         self.assertIn(str(claim.payload["claim_id"]), state.stale_claim_ids)
         self.assertEqual([], state.accepted_claims())
@@ -380,6 +515,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         branch = self.service.fork_simulation(
             "twin-1",
             scenario="What if the schedule changes?",
+            actor=self.simulation_actor,
         )
         branch.append(
             EventEnvelope.new(
@@ -387,9 +523,11 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 event_type="ScenarioStatePredicted",
                 plane=EventPlane.SIMULATION,
                 payload={"predicted_state": {"stress": "higher"}},
-                producer="simulation-worker",
+                producer=self.simulation_actor.identity_id,
+                producer_role=ProducerRole.SIMULATION_SERVICE,
                 idempotency_key="sim-1",
-            )
+            ),
+            actor=self.simulation_actor,
         )
         state_after = self.service.state("twin-1")
         self.assertEqual(state_before.sequence, state_after.sequence)
@@ -417,6 +555,43 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 consent=None,
                 expected_sequence=1,
                 idempotency_key="projection-denied",
+                actor=self.projection_actor,
+            )
+
+    async def test_projection_authorization_precedes_compilation(self) -> None:
+        await self.ingest()
+        request = ProjectionRequest(
+            request_id=str(uuid.uuid4()),
+            twin_id="twin-1",
+            subject_id="human-1",
+            recipient_id="questn",
+            purpose="decision-support",
+            requested_fields=frozenset({"readiness"}),
+            maximum_sensitivity=Sensitivity.INTERNAL,
+            as_of_valid_time=self.instant,
+            as_of_recorded_time=now(),
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.issue_projection(
+                request=request,
+                consent=None,
+                expected_sequence=1,
+                idempotency_key="projection-unauthorized",
+                actor=self.operations_actor,
+            )
+
+        wrong_subject_actor = ActorContext(
+            "projection-other-subject",
+            frozenset({ProducerRole.PROJECTION_SERVICE}),
+            subject_id="human-2",
+        )
+        with self.assertRaises(AuthorizationDenied):
+            await self.service.issue_projection(
+                request=request,
+                consent=None,
+                expected_sequence=1,
+                idempotency_key="projection-wrong-actor-subject",
+                actor=wrong_subject_actor,
             )
 
     async def test_projection_subject_must_match_bound_twin(self) -> None:
@@ -438,6 +613,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 consent=None,
                 expected_sequence=1,
                 idempotency_key="projection-wrong-subject",
+                actor=self.projection_actor,
             )
 
     async def test_unknown_projection_cannot_be_revoked(self) -> None:
@@ -447,9 +623,9 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
                 twin_id="twin-1",
                 projection_id=str(uuid.uuid4()),
                 reason="not issued",
-                actor_identity_id="human-1",
                 expected_sequence=1,
                 idempotency_key="projection-revoke-missing",
+                actor=self.projection_actor,
             )
         self.assertEqual(1, self.store.head("twin-1")[0])
 
@@ -492,6 +668,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             consent=consent,
             expected_sequence=6,
             idempotency_key="projection-allowed",
+            actor=self.projection_actor,
         )
         claims = projection["artifacts"]["decision_model"]["payload"]["claims"]
         self.assertEqual([internal.payload["claim_id"]], [item["claim_id"] for item in claims])
@@ -504,9 +681,9 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             twin_id="twin-1",
             projection_id=receipt.projection_id,
             reason="purpose completed",
-            actor_identity_id="human-1",
             expected_sequence=7,
             idempotency_key="projection-revoked",
+            actor=self.projection_actor,
         )
         state = self.service.state("twin-1")
         self.assertEqual(EventPlane.PROJECTION, revoked.plane)
@@ -521,6 +698,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "one"},
             producer="test",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key="stream-1",
         ).seal(sequence=1, previous_hash="", recorded_at=now())
         second = EventEnvelope.new(
@@ -529,6 +707,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "two"},
             producer="test",
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key="stream-2",
         ).seal(sequence=2, previous_hash=first.event_hash, recorded_at=now())
         await broker.publish(first)
@@ -545,11 +724,20 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             event_type="DegradationDeclared",
             plane=EventPlane.AUTHORITATIVE,
             payload={"reason": "test"},
-            producer="test",
+            producer=self.operations_actor.identity_id,
+            producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key="service-idempotency",
         )
-        first = await self.service.append(event, expected_sequence=0)
-        duplicate = await self.service.append(event, expected_sequence=0)
+        first = await self.service.append(
+            event,
+            actor=self.operations_actor,
+            expected_sequence=0,
+        )
+        duplicate = await self.service.append(
+            event,
+            actor=self.operations_actor,
+            expected_sequence=0,
+        )
         self.assertEqual(first.event_id, duplicate.event_id)
         self.assertEqual(first.event_id, (await subscription.__anext__()).event_id)
         self.assertTrue(subscription.queue.empty())

@@ -7,7 +7,7 @@ import tempfile
 import time
 
 from argo_dt.event_store import SQLiteEventStore
-from argo_dt.types import EventEnvelope, EventPlane
+from argo_dt.types import EventEnvelope, EventPlane, ProducerRole
 
 
 def main() -> None:
@@ -25,6 +25,7 @@ def main() -> None:
                     plane=EventPlane.AUTHORITATIVE,
                     payload={"reason": "benchmark"},
                     producer="benchmark",
+                    producer_role=ProducerRole.OPERATIONS_SERVICE,
                     idempotency_key=f"benchmark-{sequence}",
                 ),
                 expected_sequence=sequence,
@@ -43,4 +44,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
