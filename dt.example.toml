@@ -1,0 +1,30 @@
+[service]
+node_id = "dt-node-local"
+bind_http = "127.0.0.1:8088"
+bind_grpc = "127.0.0.1:50058"
+websocket_queue_capacity = 1024
+max_batch_events = 500
+
+[storage]
+event_store = "sqlite:///var/lib/argo-dt/dt.db"
+bronze_object_store = "file:///var/lib/argo-dt/bronze"
+snapshot_every_events = 1000
+
+[security]
+default_deny = true
+require_mtls = true
+policy_bundle = "./policies/rego"
+secret_provider = "infisical"
+allow_raw_evidence_export = false
+
+[runtime]
+durable_execution = "restate"
+stream_transport = "nats-jetstream"
+projection_indexer = "cocoindex"
+untrusted_worker_runtime = "wasmtime"
+
+[retention]
+raw_default_days = 365
+audit_default_days = 2555
+tombstone_retention_days = 2555
+

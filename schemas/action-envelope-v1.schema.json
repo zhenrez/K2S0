@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.local/schemas/action-envelope-v1.schema.json",
+  "title": "ARGO ActionEnvelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "action_id",
+    "principal_id",
+    "actor_identity_id",
+    "purpose",
+    "target",
+    "requested_capabilities",
+    "impact",
+    "reversible",
+    "evidence_ids",
+    "constraint_version",
+    "idempotency_key",
+    "issued_at",
+    "expires_at"
+  ],
+  "properties": {
+    "action_id": { "type": "string", "minLength": 1 },
+    "principal_id": { "type": "string", "minLength": 1 },
+    "actor_identity_id": { "type": "string", "minLength": 1 },
+    "purpose": { "type": "string", "minLength": 1 },
+    "target": { "type": "string", "minLength": 1 },
+    "requested_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "impact": {
+      "enum": ["none", "low", "moderate", "high", "critical"]
+    },
+    "reversible": { "type": "boolean" },
+    "evidence_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "constraint_version": { "type": "string", "minLength": 1 },
+    "idempotency_key": { "type": "string", "minLength": 1 },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  }
+}
+
