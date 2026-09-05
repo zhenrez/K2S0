@@ -21,7 +21,7 @@ from collections.abc import AsyncIterator, Callable, Collection, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Protocol
+from typing import Protocol, cast
 
 from .errors import (
     BackpressureExceeded,
@@ -851,7 +851,7 @@ class StateChangeFrame:
         )
 
     def to_dict(self) -> dict[str, object]:
-        return to_primitive(self)
+        return cast(dict[str, object], to_primitive(self))
 
 
 @dataclass(frozen=True, slots=True)
@@ -864,7 +864,7 @@ class HeartbeatFrame:
     schema_version: str = _STREAM_SCHEMA
 
     def to_dict(self) -> dict[str, object]:
-        return to_primitive(self)
+        return cast(dict[str, object], to_primitive(self))
 
 
 @dataclass(frozen=True, slots=True)
@@ -886,7 +886,7 @@ class CloseFrame:
             raise ProtocolViolation("stream close reason exceeds 256 characters")
 
     def to_dict(self) -> dict[str, object]:
-        return to_primitive(self)
+        return cast(dict[str, object], to_primitive(self))
 
 
 class StateStreamSession:

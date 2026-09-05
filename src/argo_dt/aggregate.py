@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from .errors import IntegrityError, InvariantViolation
 from .ports import EventStore, SnapshotStore
@@ -37,7 +37,7 @@ class TwinState:
     last_event_hash: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return to_primitive(self)
+        return cast(dict[str, Any], to_primitive(self))
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> TwinState:

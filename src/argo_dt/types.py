@@ -14,7 +14,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, cast
 
 from .errors import IntegrityError, InvariantViolation
 
@@ -258,7 +258,7 @@ class ARGOCell:
             raise InvariantViolation(f"{self.cell_type} cells require provenance")
 
     def to_dict(self) -> JsonObject:
-        return to_primitive(self)
+        return cast(JsonObject, to_primitive(self))
 
 
 @dataclass(frozen=True, slots=True)
@@ -318,7 +318,7 @@ class EventEnvelope:
         )
 
     def _hash_material(self) -> JsonObject:
-        material = to_primitive(self)
+        material = cast(JsonObject, to_primitive(self))
         material.pop("event_hash", None)
         if self.schema_version == "argo.dt.event/v1":
             material.pop("producer_role", None)

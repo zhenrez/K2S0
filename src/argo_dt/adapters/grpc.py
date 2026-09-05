@@ -11,7 +11,7 @@ import asyncio
 import inspect
 from collections.abc import AsyncIterator, Callable, Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from ..errors import (
     AuthorizationDenied,
@@ -69,7 +69,10 @@ class ProtobufCodec:
             return result
 
         def struct_decoder(value: Any) -> Mapping[str, object]:
-            return MessageToDict(value, preserving_proto_field_name=True)
+            return cast(
+                Mapping[str, object],
+                MessageToDict(value, preserving_proto_field_name=True),
+            )
 
         return cls(
             messages=messages,
@@ -263,7 +266,7 @@ class ProtobufCodec:
     @staticmethod
     def _timestamp(value: Any, *, required: bool) -> datetime:
         try:
-            result = value.ToDatetime(tzinfo=UTC)
+            result = cast(datetime, value.ToDatetime(tzinfo=UTC))
         except Exception as exc:
             if required:
                 raise ProtocolViolation("protobuf timestamp is invalid") from exc
