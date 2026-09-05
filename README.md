@@ -15,7 +15,7 @@ provides:
   concurrency, hash-verified snapshots, and a transactional outbox;
 - an AES-256-GCM Bronze vault and durable transitive deletion invalidation;
 - bitemporal state, isolated simulation branches, default-deny projection
-  compilation, and real-time bounded fan-out;
+  compilation, bounded durable replay/live synchronization, and signed cursors;
 - gRPC, REST, WebSocket, JSON Schema, SQL, and Rego integration contracts;
 - a repository-pattern disposition map and a host merge contract.
 
@@ -100,6 +100,7 @@ the pinned `bronze` extra; optional lint and type checking tools are in `dev`.
 - [gRPC contract](proto/argo/dt/v1/twin.proto)
 - [REST contract](openapi/dt-v1.yaml)
 - [ARGOCell schema](schemas/argocell-v1.schema.json)
+- [State stream schema](schemas/state-stream-v1.schema.json)
 
 ## Reference implementation boundaries
 

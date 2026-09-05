@@ -63,6 +63,17 @@ def main() -> None:
     }
     if forbidden_projection_fields.intersection(disclosed_claim["properties"]):
         fail("projection claim schema exposes internal lineage fields")
+    stream_change = schemas["state-stream-v1.schema.json"]["$defs"]["stateChange"]
+    forbidden_stream_fields = {
+        "payload",
+        "event_id",
+        "event_hash",
+        "previous_hash",
+        "producer",
+        "producer_role",
+    }
+    if forbidden_stream_fields.intersection(stream_change["properties"]):
+        fail("JSON state-change frame exposes canonical event internals")
 
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
@@ -75,12 +86,25 @@ def main() -> None:
     ]["post"]
     if "requestBody" not in revoke:
         fail("projection revocation requires an explicit reason body")
+    event_stream = openapi["paths"].get("/v1/twins/{twin_id}/events", {}).get("get")
+    if event_stream is None or "x-websocket" not in event_stream:
+        fail("OpenAPI is missing the WebSocket state-stream contract")
+    state_change = openapi["components"]["schemas"]["StateChangeFrame"]
+    if forbidden_stream_fields.intersection(state_change["properties"]):
+        fail("public state-change frames expose canonical event internals")
 
     proto = (ROOT / "proto" / "argo" / "dt" / "v1" / "twin.proto").read_text()
     if "string producer_role = 15;" not in proto:
         fail("protobuf TwinEvent is missing producer_role field 15")
     if "google.protobuf.Struct projection = 1;" not in proto:
         fail("protobuf projection response drifted from the REST/service contract")
+    if "rpc SubscribeState(stream StateStreamRequest)" not in proto:
+        fail("protobuf state subscription is not bidirectional")
+    if "repeated TelemetryRecordAck record_acks = 8;" not in proto:
+        fail("protobuf telemetry acknowledgement lacks per-record status")
+    state_change_proto = proto.split("message StateChange {", 1)[1].split("}", 1)[0]
+    if "payload" in state_change_proto or "event_hash" in state_change_proto:
+        fail("protobuf state-change frame exposes canonical payload or hash")
     sql = (ROOT / "db" / "migrations" / "0001_dt.sql").read_text()
     if "producer_role text not null" not in sql.lower():
         fail("SQLite event ledger is missing producer_role")

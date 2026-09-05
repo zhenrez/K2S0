@@ -48,11 +48,20 @@ hardening gates rather than implied results.
 
 ### DT-2
 
-- Generate gRPC stubs and enforce message/record byte limits.
-- Add stream-level and record-level acknowledgements.
-- Implement NATS subject topology and durable consumers.
-- Add WebSocket cursor/heartbeat/close protocol.
-- Expose OpenTelemetry metrics, traces, and structured redacted logs.
+Status: embedded synchronization semantics complete in 0.4.0. The core now
+provides bounded SQLite replay/live handoff, authenticated cursors, cumulative
+acks, safe state frames, byte ceilings, heartbeat/close frames, NATS subject
+validation, and redaction-safe counters. Generated gRPC servers, a WebSocket
+runtime, NATS durable-consumer deployment, OpenTelemetry export, and the SLO
+soak remain integration gates; they are not claimed as executed.
+
+- Generate gRPC stubs from the frozen bidi stream contract in an adapter build;
+  enforce 1 MiB/record, 4 MiB/batch, and 500 records/batch before processing.
+- Map stream-level and record-level acknowledgement contracts to the adapter.
+- Bind validated NATS subjects to JetStream durable consumers and DLQ policy.
+- Map cursor/ack/heartbeat/close primitives to the WebSocket adapter.
+- Export `SyncMetrics.snapshot()` through OpenTelemetry without twin, subject,
+  cursor, event ID, payload, or hash attributes.
 
 ### DT-3
 

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.example/schemas/state-stream-v1.schema.json",
+  "title": "ARGO Digital Twin State Stream Frame v1",
+  "oneOf": [
+    { "$ref": "#/$defs/stateChange" },
+    { "$ref": "#/$defs/serverHeartbeat" },
+    { "$ref": "#/$defs/serverClose" },
+    { "$ref": "#/$defs/subscribe" },
+    { "$ref": "#/$defs/acknowledge" },
+    { "$ref": "#/$defs/clientHeartbeat" },
+    { "$ref": "#/$defs/clientClose" }
+  ],
+  "$defs": {
+    "resumeToken": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 2048
+    },
+    "stateChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "schema_version",
+        "twin_id",
+        "sequence",
+        "event_type",
+        "plane",
+        "occurred_at",
+        "recorded_at",
+        "resume_token"
+      ],
+      "properties": {
+        "type": { "const": "event" },
+        "schema_version": { "const": "argo.dt.state-stream/v1" },
+        "twin_id": { "type": "string", "minLength": 1 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "event_type": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "plane": { "enum": ["authoritative", "projection"] },
+        "occurred_at": { "type": "string", "format": "date-time" },
+        "recorded_at": { "type": "string", "format": "date-time" },
+        "resume_token": { "$ref": "#/$defs/resumeToken" }
+      }
+    },
+    "serverHeartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "schema_version",
+        "twin_id",
+        "acknowledged_sequence",
+        "resume_token",
+        "sent_at"
+      ],
+      "properties": {
+        "type": { "const": "heartbeat" },
+        "schema_version": { "const": "argo.dt.state-stream/v1" },
+        "twin_id": { "type": "string", "minLength": 1 },
+        "acknowledged_sequence": { "type": "integer", "minimum": 0 },
+        "resume_token": { "$ref": "#/$defs/resumeToken" },
+        "sent_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "serverClose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "schema_version",
+        "twin_id",
+        "code",
+        "reason",
+        "acknowledged_sequence",
+        "resume_token"
+      ],
+      "properties": {
+        "type": { "const": "close" },
+        "schema_version": { "const": "argo.dt.state-stream/v1" },
+        "twin_id": { "type": "string", "minLength": 1 },
+        "code": { "type": "integer", "minimum": 1000, "maximum": 4999 },
+        "reason": { "type": "string", "maxLength": 256 },
+        "acknowledged_sequence": { "type": "integer", "minimum": 0 },
+        "resume_token": { "$ref": "#/$defs/resumeToken" }
+      }
+    },
+    "subscribe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "subscribe" },
+        "resume_token": { "$ref": "#/$defs/resumeToken" },
+        "event_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 64,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        },
+        "include_projection_events": { "type": "boolean", "default": false },
+        "max_in_flight": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "default": 128
+        }
+      }
+    },
+    "acknowledge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "resume_token"],
+      "properties": {
+        "type": { "const": "acknowledge" },
+        "resume_token": { "$ref": "#/$defs/resumeToken" }
+      }
+    },
+    "clientHeartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "sent_at"],
+      "properties": {
+        "type": { "const": "heartbeat" },
+        "sent_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "clientClose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "code", "reason"],
+      "properties": {
+        "type": { "const": "close" },
+        "code": { "type": "integer", "minimum": 1000, "maximum": 4999 },
+        "reason": { "type": "string", "maxLength": 256 }
+      }
+    }
+  }
+}

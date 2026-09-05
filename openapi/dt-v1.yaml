@@ -29,6 +29,30 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TwinState" }
         "403": { $ref: "#/components/responses/Denied" }
+  /v1/twins/{twin_id}/events:
+    get:
+      operationId: streamTwinStateChanges
+      description: |
+        WebSocket upgrade for payload-minimized state-change notifications.
+        The first client frame is subscribe; keeping its optional cursor out of
+        the URL prevents routine access-log capture. The cursor is a
+        resumability capability, not an authentication token. Clients
+        acknowledge only cursors received on this connection.
+      security:
+        - oidc: [dt.stream]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+      responses:
+        "101":
+          description: WebSocket protocol switched; frames follow StateStreamFrame.
+        "400": { description: Invalid or expired cursor }
+        "403": { $ref: "#/components/responses/Denied" }
+      x-websocket:
+        serverFrames:
+          $ref: "#/components/schemas/StateStreamFrame"
+        clientFrames:
+          $ref: "#/components/schemas/StateStreamControlFrame"
+        heartbeatSeconds: 30
   /v1/twins/{twin_id}/projections:
     post:
       operationId: compileProjection
@@ -139,6 +163,7 @@ components:
           tokenUrl: https://identity.internal.example/oauth/token
           scopes:
             dt.read: Read consent-scoped state
+            dt.stream: Subscribe to subject-scoped state-change notifications
             dt.project: Compile projections
             dt.project.revoke: Revoke projections
             dt.simulate: Run isolated simulations
@@ -160,6 +185,105 @@ components:
       required: true
       schema: { type: integer, minimum: 0 }
   schemas:
+    StateChangeFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - schema_version
+        - twin_id
+        - sequence
+        - event_type
+        - plane
+        - occurred_at
+        - recorded_at
+        - resume_token
+      properties:
+        type: { const: event }
+        schema_version: { const: argo.dt.state-stream/v1 }
+        twin_id: { type: string, minLength: 1 }
+        sequence: { type: integer, minimum: 1 }
+        event_type: { type: string, minLength: 1 }
+        plane: { enum: [authoritative, projection] }
+        occurred_at: { type: string, format: date-time }
+        recorded_at: { type: string, format: date-time }
+        resume_token: { type: string, minLength: 32, maxLength: 2048 }
+    HeartbeatFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - schema_version
+        - twin_id
+        - acknowledged_sequence
+        - resume_token
+        - sent_at
+      properties:
+        type: { const: heartbeat }
+        schema_version: { const: argo.dt.state-stream/v1 }
+        twin_id: { type: string, minLength: 1 }
+        acknowledged_sequence: { type: integer, minimum: 0 }
+        resume_token: { type: string, minLength: 32, maxLength: 2048 }
+        sent_at: { type: string, format: date-time }
+    StreamCloseFrame:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - schema_version
+        - twin_id
+        - code
+        - reason
+        - acknowledged_sequence
+        - resume_token
+      properties:
+        type: { const: close }
+        schema_version: { const: argo.dt.state-stream/v1 }
+        twin_id: { type: string, minLength: 1 }
+        code: { type: integer, minimum: 1000, maximum: 4999 }
+        reason: { type: string, maxLength: 256 }
+        acknowledged_sequence: { type: integer, minimum: 0 }
+        resume_token: { type: string, minLength: 32, maxLength: 2048 }
+    StateStreamFrame:
+      oneOf:
+        - $ref: "#/components/schemas/StateChangeFrame"
+        - $ref: "#/components/schemas/HeartbeatFrame"
+        - $ref: "#/components/schemas/StreamCloseFrame"
+      discriminator: { propertyName: type }
+    StateStreamControlFrame:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [type]
+          properties:
+            type: { const: subscribe }
+            resume_token: { type: string, minLength: 32, maxLength: 2048 }
+            max_in_flight: { type: integer, minimum: 1, maximum: 128, default: 128 }
+            event_types:
+              type: array
+              uniqueItems: true
+              maxItems: 64
+              items: { type: string, minLength: 1, maxLength: 128 }
+            include_projection_events: { type: boolean, default: false }
+        - type: object
+          additionalProperties: false
+          required: [type, resume_token]
+          properties:
+            type: { const: acknowledge }
+            resume_token: { type: string, minLength: 32, maxLength: 2048 }
+        - type: object
+          additionalProperties: false
+          required: [type, sent_at]
+          properties:
+            type: { const: heartbeat }
+            sent_at: { type: string, format: date-time }
+        - type: object
+          additionalProperties: false
+          required: [type, code, reason]
+          properties:
+            type: { const: close }
+            code: { type: integer, minimum: 1000, maximum: 4999 }
+            reason: { type: string, maxLength: 256 }
     TwinState:
       type: object
       required:

@@ -30,6 +30,11 @@ The package defines ports in **src/argo_dt/ports.py**. Production adapters:
 Adapters may be replaced independently. They may not weaken idempotency,
 ordering, temporal, provenance, minimization, or policy semantics.
 
+The embedded profile supplies durable synchronization directly over the SQLite
+ledger and in-process outbox. `DurableSubscription` subscribes to live delivery
+before capturing the SQLite head, pages replay to that head, then deduplicates
+the live handoff by verified sequence and chain position.
+
 ## 3. Transport selection
 
 | Path | Protocol | Why | Required semantics |
@@ -83,7 +88,7 @@ API slice. They are intentionally not faked by generic CRUD routes.
 Endpoint:
 
 ~~~text
-wss://host/v1/twins/{twin_id}/events?after_sequence=1234
+wss://host/v1/twins/{twin_id}/events
 ~~~
 
 Server frames:
@@ -94,15 +99,24 @@ Server frames:
   "twin_id": "…",
   "sequence": 1235,
   "event_type": "ClaimAccepted",
+  "plane": "authoritative",
+  "occurred_at": "2026-09-04T00:00:00Z",
   "recorded_at": "2026-09-04T00:00:00Z",
-  "payload": {}
+  "resume_token": "authenticated-resume-token"
 }
 ~~~
 
 Control frames are limited to subscribe, acknowledge, heartbeat, and close.
 Domain mutations use REST/gRPC so idempotency and concurrency preconditions are
 not ambiguous. A slow consumer is disconnected with its last acknowledged
-sequence and must replay.
+cursor and must replay. Public frames omit payload, event and producer identity,
+provenance, and raw chain hashes; consumers fetch a newly authorized projection
+after a relevant change notification. Cursor tokens are HMAC-authenticated,
+twin-bound, expiry-checked, and chain-bound through a keyed tag. They are
+resumability capabilities, never authentication credentials. Unsigned
+`after_sequence` is operations-only inside the trusted service boundary. The
+optional resume cursor is sent in the initial subscribe frame, not the URL, to
+avoid routine proxy/access-log capture.
 
 ## 5. Event subjects and ownership
 

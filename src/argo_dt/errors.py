@@ -29,5 +29,17 @@ class BackpressureExceeded(DigitalTwinError):
     """A real-time subscriber could not keep up safely."""
 
 
+class ProtocolViolation(DigitalTwinError):
+    """A synchronization peer sent an invalid frame or acknowledgement."""
+
+
+class ResumeCursorRejected(ProtocolViolation):
+    """A resume cursor is malformed, forged, expired, or bound elsewhere."""
+
+
+class MessageTooLarge(ProtocolViolation):
+    """A transport record or batch exceeded its configured byte budget."""
+
+
 class NotFound(DigitalTwinError):
     """A requested Digital Twin object does not exist."""

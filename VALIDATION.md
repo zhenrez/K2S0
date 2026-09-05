@@ -7,9 +7,9 @@ Date: 2026-09-05 UTC
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant and persistence tests | 51/51 passed |
+| Invariant, persistence, and synchronization tests | 62/62 passed |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
-| JSON contracts | All five JSON Schema files parsed successfully |
+| JSON contracts | All six JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
 | Event integrity | Hash-chain verification passed |
 | SQLite migration | Executed successfully in an in-memory SQLite database |
@@ -18,6 +18,10 @@ Date: 2026-09-05 UTC
 | Deletion propagation | Evidence → claim → projection invalidation queue passed |
 | Bronze encryption | AES-GCM round trip, tamper rejection, subject isolation, and no plaintext-at-rest assertion passed |
 | Projection non-interference | Public payload and receipt omit claim, evidence, model-trace, and sensitivity identifiers |
+| Durable synchronization | Paged replay, replay/live race deduplication, gap recovery, resume, and unsubscribe passed |
+| Cursor security | Forgery, expiry, wrong-twin, wrong-chain, and raw-hash non-disclosure checks passed |
+| Stream controls | Cumulative ack, bounded in-flight window, heartbeat, close, and subject-scope checks passed |
+| Transport contracts | Record/batch ceilings, record-level acks, WebSocket frames, and NATS subject validation passed |
 | Package metadata | setuptools 84.0.0 is available; source-layout metadata is defined |
 
 Covered tests:
@@ -59,6 +63,12 @@ Covered tests:
 - recursive deletion dependency queuing through projections;
 - deterministic encrypted Bronze writes, source collision rejection, and
   authenticated decryption failure on tampering.
+- ordered, bounded replay-to-live handoff with at-least-once duplicate removal;
+- HMAC-authenticated, expiry-checked, twin- and chain-bound cursor resume;
+- cumulative acknowledgement and slow/unacknowledged consumer termination;
+- payload-minimized, subject-scoped external state-change frames;
+- exact telemetry record/batch byte ceilings and explicit record statuses;
+- wildcard-safe NATS subject construction.
 
 ## Local smoke benchmark
 
@@ -67,6 +77,12 @@ outbox pointer per event, at approximately 8,596 events/second in this ephemeral
 environment. Full replay of 10,000 events had a 531.380 ms median; replay from
 a hash-verified snapshot plus 100 tail events had a 5.140 ms median (103.38×)
 across 10 iterations. Both replay paths produced identical state.
+
+The DT-2 synchronization smoke tool replayed and hash-verified 10,000 events in
+0.565 seconds (17,713 events/second), with approximately 424 KB peak memory
+traced during a separate bounded-page replay pass. In-process live publish to
+consume measured 0.095 ms. The page size was 256 and the acknowledgement window
+was one event during the measurement.
 
 This is not a production capacity result. It excludes network, authentication,
 external publication, concurrent writers, multi-tenant load, disk-failure
@@ -79,7 +95,7 @@ remain targets until the specified load and soak tests pass.
 | --- | --- |
 | Protobuf generation | protoc/buf toolchain is not present |
 | OPA policy tests | OPA toolchain is not present |
-| NATS/Restate integration | No service topology was supplied |
+| NATS/WebSocket/gRPC/OTel/Restate integration | No service topology or adapter runtime was supplied |
 | Host-repository integration | Host source tree was not supplied |
 | Ruff/mypy | Optional development tools are not installed |
 | Wheel build | Package command triggered a blocked dependency/network workflow; no network override was attempted |
