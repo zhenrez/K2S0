@@ -10,6 +10,7 @@ architecture. Each phase adds executable capability behind stable ports.
 | DT-0 — contracts | ARGOCell, events, consent, action, projection, identity kinds, schema registry | golden schemas; compatibility tests; invariant owners assigned |
 | DT-1 — authoritative ledger | SQLite event/outbox/snapshot/dependency store, encrypted Bronze adapter | idempotency/CAS/chain/deletion tests; reopen recovery drill |
 | DT-2 — synchronization | gRPC stream, NATS publish/replay, WebSocket cursors | p99/throughput target at 2× expected peak; bounded-memory soak |
+| DT-2.1 — transport hardening | executable adapters, key rollover, OTel, load harness | generated-contract CI + adapter invariants + deployment soak |
 | DT-3 — epistemic core | normalized events, claim/counterevidence, contradictions, review, time travel | all source→claim→evidence traces reversible; no silent overwrite |
 | DT-4 — compiler/projection | kernel artifacts, loss manifests, OPA consent and receipts | field non-interference; revocation race; generic denials |
 | DT-5 — simulation | branch/fork, deterministic scenario inputs, evaluation, review referral | mutation test proves zero automatic evidence contamination |
@@ -63,6 +64,21 @@ soak remain integration gates; they are not claimed as executed.
 - Export `SyncMetrics.snapshot()` through OpenTelemetry without twin, subject,
   cursor, event ID, payload, or hash attributes.
 
+### DT-2.1
+
+Status: executable transport hardening complete in 0.5.0. The raw ASGI adapter,
+host-generated protobuf gRPC handlers, partial/idempotent telemetry processor,
+JetStream publisher/consumer, bounded cursor key ring, OTel exporter, generated
+contract CI, and sustained-load harness are implemented. Live OIDC/mTLS, NATS,
+OTel collector, and 24-hour deployment soak remain environment gates.
+
+- Authenticate and require `dt.ingest`/`dt.stream` before accepting work.
+- Generate protobuf modules in the host build and test exact serialized sizes.
+- Keep SQLite authoritative when NATS is unavailable or redelivers events.
+- Rotate cursor keys through an explicit bounded overlap set.
+- Export only low-cardinality aggregate counters.
+- Preserve the existing DT-3 epistemic-core phase numbering.
+
 ### DT-3
 
 - Implement canonical event types for evidence, identity, claims,
@@ -108,7 +124,7 @@ soak remain integration gates; they are not claimed as executed.
 - Add native acceleration only for hot paths proven by profiling.
 - Add sharded/replicated SQLite or managed alternatives only if deployment
   requirements outgrow the embedded profile.
-- Add key rotation, SBOM, artifact signing, SAST/DAST, image scanning.
+- Add managed key-provider lifecycle, SBOM, artifact signing, SAST/DAST, image scanning.
 - Run performance, failover, disaster recovery, privacy, and security gates.
 - Freeze a production compatibility baseline.
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import copy
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from typing import Any, Mapping, Sequence
 
@@ -14,7 +16,7 @@ from .ports import DurableEventStore
 from .simulation import SimulationBranch, SimulationEngine
 from .sync import (
     BoundedEventBroker,
-    CursorSigner,
+    CursorCodec,
     DurableSubscription,
     OutboxRelay,
     RelayBatch,
@@ -50,8 +52,9 @@ class DigitalTwinService:
         snapshot_interval: int = 1000,
         snapshot_retention: int = 3,
         outbox_retention: timedelta = timedelta(days=7),
-        cursor_signer: CursorSigner | None = None,
+        cursor_signer: CursorCodec | None = None,
         sync_limits: SyncLimits | None = None,
+        state_cache_entries: int = 128,
     ) -> None:
         if snapshot_interval < 0:
             raise ValueError("snapshot_interval cannot be negative")
@@ -59,6 +62,8 @@ class DigitalTwinService:
             raise ValueError("snapshot_retention must be positive")
         if outbox_retention <= timedelta(0):
             raise ValueError("outbox_retention must be positive")
+        if state_cache_entries < 0:
+            raise ValueError("state_cache_entries cannot be negative")
         self.store = store
         self.projection_compiler = projection_compiler
         self.broker = broker or BoundedEventBroker()
@@ -71,6 +76,8 @@ class DigitalTwinService:
         self.snapshot_interval = snapshot_interval
         self.snapshot_retention = snapshot_retention
         self.outbox_retention = outbox_retention
+        self._state_cache_entries = state_cache_entries
+        self._state_cache: OrderedDict[str, TwinState] = OrderedDict()
 
     async def append(
         self,
@@ -86,15 +93,31 @@ class DigitalTwinService:
                 "simulation events belong to SimulationBranch, not the authoritative store"
             )
         head_sequence, head_hash = self.store.head(event.twin_id)
+        current_state: TwinState | None = None
         if head_sequence == expected_sequence:
+            current_state = self._latest_state(event.twin_id)
+            if (
+                current_state.sequence != head_sequence
+                or current_state.last_event_hash != head_hash
+            ):
+                raise ConcurrencyConflict("stream changed during transition validation")
             preview = event.seal(
                 sequence=expected_sequence + 1,
                 previous_hash=head_hash,
                 recorded_at=utc_now(),
             )
-            TwinAggregate.apply(self.state(event.twin_id), preview)
+            TwinAggregate.apply(copy.deepcopy(current_state), preview)
         persisted = self.store.append(event, expected_sequence=expected_sequence)
         if persisted.sequence > head_sequence:
+            if current_state is not None:
+                try:
+                    TwinAggregate.apply(current_state, persisted)
+                except Exception:
+                    self._state_cache.pop(persisted.twin_id, None)
+                    raise
+                self._cache_state(current_state)
+            else:
+                self._state_cache.pop(persisted.twin_id, None)
             if (
                 self.snapshot_interval > 0
                 and persisted.sequence % self.snapshot_interval == 0
@@ -130,6 +153,9 @@ class DigitalTwinService:
         expected_sequence: int,
         idempotency_key: str,
         actor: ActorContext,
+        connector_version: str | None = None,
+        media_type: str | None = None,
+        source_content_hash: str | None = None,
     ) -> EventEnvelope:
         self.ownership_policy.authorize_intent(
             "EvidenceIngested",
@@ -137,7 +163,7 @@ class DigitalTwinService:
             actor,
         )
         self.ownership_policy.authorize_subject(actor, subject_id)
-        state = self.state(twin_id)
+        state = self._latest_state(twin_id)
         if state.subject_id is not None and state.subject_id != subject_id:
             raise InvariantViolation("evidence subject does not match twin subject")
         evidence_id = str(
@@ -146,6 +172,25 @@ class DigitalTwinService:
                 f"{twin_id}:{subject_id}:{source}:{source_record_id}",
             )
         )
+        event_payload: dict[str, Any] = {
+            "evidence_id": evidence_id,
+            "subject_id": subject_id,
+            "source": source,
+            "source_record_id": source_record_id,
+            "content_hash": content_hash(payload),
+            "normalized_payload": dict(payload),
+            "rights": dict(rights),
+            "sensitivity": sensitivity.value,
+            "valid_from": valid_from.isoformat(),
+            "valid_until": valid_until.isoformat() if valid_until else None,
+            "independence_group": independence_group,
+        }
+        if connector_version is not None:
+            event_payload["connector_version"] = connector_version
+        if media_type is not None:
+            event_payload["media_type"] = media_type
+        if source_content_hash is not None:
+            event_payload["source_content_hash"] = source_content_hash
         event = EventEnvelope.new(
             twin_id=twin_id,
             event_type="EvidenceIngested",
@@ -154,19 +199,7 @@ class DigitalTwinService:
             producer_role=ProducerRole.INGEST_SERVICE,
             idempotency_key=idempotency_key,
             occurred_at=valid_from,
-            payload={
-                "evidence_id": evidence_id,
-                "subject_id": subject_id,
-                "source": source,
-                "source_record_id": source_record_id,
-                "content_hash": content_hash(payload),
-                "normalized_payload": dict(payload),
-                "rights": dict(rights),
-                "sensitivity": sensitivity.value,
-                "valid_from": valid_from.isoformat(),
-                "valid_until": valid_until.isoformat() if valid_until else None,
-                "independence_group": independence_group,
-            },
+            payload=event_payload,
         )
         return await self.append(event, actor=actor, expected_sequence=expected_sequence)
 
@@ -321,6 +354,8 @@ class DigitalTwinService:
         up_to_sequence: int | None = None,
         as_of_recorded_time: datetime | None = None,
     ) -> TwinState:
+        if up_to_sequence is None and as_of_recorded_time is None:
+            return copy.deepcopy(self._latest_state(twin_id))
         return TwinAggregate.rebuild(
             self.store,
             twin_id,
@@ -328,6 +363,38 @@ class DigitalTwinService:
             up_to_sequence=up_to_sequence,
             as_of_recorded_time=as_of_recorded_time,
         )
+
+    @property
+    def cached_twin_count(self) -> int:
+        return len(self._state_cache)
+
+    def _latest_state(self, twin_id: str) -> TwinState:
+        head_sequence, head_hash = self.store.head(twin_id)
+        cached = self._state_cache.get(twin_id)
+        if (
+            cached is not None
+            and cached.sequence == head_sequence
+            and cached.last_event_hash == head_hash
+        ):
+            self._state_cache.move_to_end(twin_id)
+            return cached
+        if cached is not None:
+            self._state_cache.pop(twin_id, None)
+        state = TwinAggregate.rebuild(
+            self.store,
+            twin_id,
+            snapshot_store=self.store,
+        )
+        self._cache_state(state)
+        return state
+
+    def _cache_state(self, state: TwinState) -> None:
+        if self._state_cache_entries == 0:
+            return
+        self._state_cache[state.twin_id] = state
+        self._state_cache.move_to_end(state.twin_id)
+        while len(self._state_cache) > self._state_cache_entries:
+            self._state_cache.popitem(last=False)
 
     async def issue_projection(
         self,
@@ -470,6 +537,7 @@ class DigitalTwinService:
         resume_token: str | None = None,
         event_types: Sequence[str] = (),
         include_projection_events: bool = False,
+        max_in_flight: int | None = None,
     ) -> StateStreamSession:
         """Open an authorized payload-minimized state notification stream."""
 
@@ -508,7 +576,7 @@ class DigitalTwinService:
             store=self.store,
             broker=self.broker,
             start=start,
-            limits=self.sync_limits,
+            limits=self.sync_limits.negotiate(max_in_flight=max_in_flight),
             event_types=event_types,
             planes=planes,
             metrics=self.sync_metrics,

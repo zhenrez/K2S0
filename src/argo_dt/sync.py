@@ -18,10 +18,10 @@ import secrets
 import uuid
 from collections import deque
 from collections.abc import Collection, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import AsyncIterator, Callable
+from typing import AsyncIterator, Callable, Protocol
 
 from .errors import (
     BackpressureExceeded,
@@ -82,6 +82,21 @@ class DecodedCursor:
     sequence: int
     chain_tag: str
     issued_at: datetime
+    signing_key_id: str = "default"
+
+
+class CursorCodec(Protocol):
+    """Common cursor contract implemented by single-key and rotating signers."""
+
+    def issue(self, position: StreamPosition) -> str: ...
+
+    def verify(self, token: str, *, twin_id: str) -> DecodedCursor: ...
+
+    def verify_chain_binding(
+        self,
+        cursor: DecodedCursor,
+        position: StreamPosition,
+    ) -> StreamPosition: ...
 
 
 class CursorSigner:
@@ -91,26 +106,30 @@ class CursorSigner:
         self,
         key: bytes,
         *,
+        key_id: str = "default",
         max_age: timedelta | None = timedelta(days=7),
         clock: Callable[[], datetime] = utc_now,
         allowed_clock_skew: timedelta = timedelta(minutes=1),
     ) -> None:
         if len(key) < 32:
             raise ValueError("cursor signing key must contain at least 32 bytes")
+        if not _SUBJECT_TOKEN_PATTERN.fullmatch(key_id):
+            raise ValueError("cursor signing key_id must be a URL-safe token")
         if max_age is not None and max_age <= timedelta(0):
             raise ValueError("cursor max_age must be positive")
         if allowed_clock_skew < timedelta(0):
             raise ValueError("allowed_clock_skew cannot be negative")
         self._key = bytes(key)
+        self.key_id = key_id
         self._max_age = max_age
         self._clock = clock
         self._allowed_clock_skew = allowed_clock_skew
 
     @classmethod
-    def ephemeral(cls) -> CursorSigner:
+    def ephemeral(cls, *, key_id: str = "ephemeral") -> CursorSigner:
         """Create a process-local signer; production adapters inject durable key material."""
 
-        return cls(secrets.token_bytes(32))
+        return cls(secrets.token_bytes(32), key_id=key_id)
 
     def issue(self, position: StreamPosition) -> str:
         material = {
@@ -172,7 +191,22 @@ class CursorSigner:
             sequence=material["sequence"],
             chain_tag=material["chain_tag"],
             issued_at=issued_at,
+            signing_key_id=self.key_id,
         )
+
+    def matches_signature(self, token: str) -> bool:
+        """Check only the MAC so a bounded key ring can select the signer."""
+
+        parts = token.split(".")
+        if len(parts) != 2:
+            return False
+        try:
+            payload = _b64url_decode(parts[0])
+            supplied_signature = _b64url_decode(parts[1])
+        except ResumeCursorRejected:
+            return False
+        expected_signature = hmac.new(self._key, payload, hashlib.sha256).digest()
+        return hmac.compare_digest(supplied_signature, expected_signature)
 
     def verify_chain_binding(
         self,
@@ -196,6 +230,77 @@ class CursorSigner:
             }
         ).encode("utf-8")
         return _b64url_encode(hmac.new(self._key, material, hashlib.sha256).digest())
+
+
+class RotatingCursorSigner:
+    """Issue with one active key while accepting a bounded overlap key set.
+
+    The v1 cursor wire shape remains unchanged. Verification first identifies
+    the signing key by its MAC, then applies that key's age and chain checks.
+    Removing a key immediately revokes every cursor it signed.
+    """
+
+    MAX_KEYS = 8
+
+    def __init__(
+        self,
+        active: CursorSigner,
+        *,
+        retiring: Sequence[CursorSigner] = (),
+    ) -> None:
+        signers = (active, *retiring)
+        if len(signers) > self.MAX_KEYS:
+            raise ValueError(f"cursor key ring cannot exceed {self.MAX_KEYS} keys")
+        key_ids = [signer.key_id for signer in signers]
+        if len(key_ids) != len(set(key_ids)):
+            raise ValueError("cursor key IDs must be unique")
+        self._active = active
+        self._by_id = {signer.key_id: signer for signer in signers}
+        self._verification_order = signers
+
+    @property
+    def active_key_id(self) -> str:
+        return self._active.key_id
+
+    @property
+    def accepted_key_ids(self) -> tuple[str, ...]:
+        return tuple(signer.key_id for signer in self._verification_order)
+
+    def issue(self, position: StreamPosition) -> str:
+        return self._active.issue(position)
+
+    def verify(self, token: str, *, twin_id: str) -> DecodedCursor:
+        for signer in self._verification_order:
+            if signer.matches_signature(token):
+                return signer.verify(token, twin_id=twin_id)
+        raise ResumeCursorRejected("resume cursor signature is invalid")
+
+    def verify_chain_binding(
+        self,
+        cursor: DecodedCursor,
+        position: StreamPosition,
+    ) -> StreamPosition:
+        signer = self._by_id.get(cursor.signing_key_id)
+        if signer is None:
+            raise ResumeCursorRejected("resume cursor signing key is no longer accepted")
+        return signer.verify_chain_binding(cursor, position)
+
+    def rotate(
+        self,
+        new_active: CursorSigner,
+        *,
+        retain: int = 1,
+    ) -> RotatingCursorSigner:
+        """Return a new key ring; callers atomically swap the configured ring."""
+
+        if retain < 0 or retain >= self.MAX_KEYS:
+            raise ValueError(f"retain must be in [0, {self.MAX_KEYS - 1}]")
+        previous = [
+            signer
+            for signer in self._verification_order
+            if signer.key_id != new_active.key_id
+        ]
+        return RotatingCursorSigner(new_active, retiring=previous[:retain])
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,6 +354,17 @@ class SyncLimits:
             raise MessageTooLarge("telemetry record exceeds the byte limit")
         if serialized_batch_bytes > self.max_batch_bytes:
             raise MessageTooLarge("telemetry batch exceeds the byte limit")
+
+    def negotiate(self, *, max_in_flight: int | None = None) -> SyncLimits:
+        """Apply a client-requested limit only when it is at least as strict."""
+
+        if max_in_flight is None or max_in_flight == 0:
+            return self
+        if isinstance(max_in_flight, bool) or not isinstance(max_in_flight, int):
+            raise ProtocolViolation("max_in_flight must be an integer")
+        if max_in_flight < 1 or max_in_flight > self.max_in_flight:
+            raise ProtocolViolation("max_in_flight exceeds the server limit")
+        return replace(self, max_in_flight=max_in_flight)
 
 
 class TelemetryRecordStatus(StrEnum):
@@ -417,6 +533,9 @@ class OutboxRelay:
             if not self.store.mark_outbox_published(record):
                 raise IntegrityError("published event lost its outbox lease")
             published += 1
+            # In-process publishers can complete without suspending. Yield once
+            # per record so a backlog cannot starve stream readers on the loop.
+            await asyncio.sleep(0)
         return RelayBatch(len(records), published, failed)
 
 
@@ -777,7 +896,7 @@ class StateStreamSession:
         self,
         *,
         subscription: DurableSubscription,
-        cursor_signer: CursorSigner,
+        cursor_signer: CursorCodec,
         metrics: SyncMetrics,
     ) -> None:
         self._subscription = subscription
@@ -849,7 +968,7 @@ class NatsSubjectTopology:
     """Validated subject construction; routing metadata never grants access."""
 
     @staticmethod
-    def _token(value: str, *, name: str) -> str:
+    def token(value: str, *, name: str) -> str:
         if not _SUBJECT_TOKEN_PATTERN.fullmatch(value):
             raise ProtocolViolation(
                 f"{name} must be 1-64 URL-safe characters without NATS wildcards"
@@ -862,10 +981,10 @@ class NatsSubjectTopology:
             (
                 "argo",
                 "dt",
-                cls._token(tenant, name="tenant"),
-                cls._token(event.twin_id, name="twin_id"),
-                cls._token(event.plane.value, name="plane"),
-                cls._token(event.event_type, name="event_type"),
+                cls.token(tenant, name="tenant"),
+                cls.token(event.twin_id, name="twin_id"),
+                cls.token(event.plane.value, name="plane"),
+                cls.token(event.event_type, name="event_type"),
             )
         )
         if len(subject.encode("utf-8")) > 255:
@@ -874,13 +993,42 @@ class NatsSubjectTopology:
 
     @classmethod
     def deadletter(cls, *, tenant: str, twin_id: str, stage: str) -> str:
-        return ".".join(
+        subject = ".".join(
             (
                 "argo",
                 "dt",
-                cls._token(tenant, name="tenant"),
-                cls._token(twin_id, name="twin_id"),
+                cls.token(tenant, name="tenant"),
+                cls.token(twin_id, name="twin_id"),
                 "deadletter",
-                cls._token(stage, name="stage"),
+                cls.token(stage, name="stage"),
             )
         )
+        if len(subject.encode("utf-8")) > 255:
+            raise ProtocolViolation("NATS dead-letter subject exceeds project limit")
+        return subject
+
+    @classmethod
+    def consumer_filter(
+        cls,
+        *,
+        tenant: str,
+        twin_id: str | None = None,
+        plane: str | None = None,
+        event_type: str | None = None,
+    ) -> str:
+        """Build a single-token wildcard filter without accepting raw wildcards."""
+
+        tokens = (
+            "argo",
+            "dt",
+            cls.token(tenant, name="tenant"),
+            cls.token(twin_id, name="twin_id") if twin_id is not None else "*",
+            cls.token(plane, name="plane") if plane is not None else "*",
+            cls.token(event_type, name="event_type")
+            if event_type is not None
+            else "*",
+        )
+        subject = ".".join(tokens)
+        if len(subject.encode("utf-8")) > 255:
+            raise ProtocolViolation("NATS consumer filter exceeds project limit")
+        return subject

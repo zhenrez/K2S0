@@ -35,6 +35,9 @@ capacity evidence.
 ### Read path
 
 - Rebuild from snapshot + tail events.
+- Cache only the latest state in a bounded, per-process LRU. Verify its sequence
+  and hash against the SQLite head before reuse; return caller-safe copies and
+  never cache historical/as-of queries.
 - Snapshot every 1,000 events initially, then adapt by replay cost.
 - Retain the newest three snapshots per twin by default; snapshots are caches,
   while the event stream remains canonical.
@@ -66,6 +69,11 @@ in bounded pages. Missing or chain-invalid positions fail closed.
 frame, acknowledgement, heartbeat, close, integrity-failure, and backpressure
 counters. OpenTelemetry adapters must not attach twin IDs, subject IDs, cursor
 tokens, event IDs, payloads, or hashes as attributes.
+
+`OpenTelemetrySyncExporter` enforces this with a fixed low-cardinality
+attribute allow-list and exports only new counter deltas. The embedded outbox
+relay explicitly yields between immediately completed in-process publications,
+preventing a caught-up SQLite writer from starving stream readers.
 
 ### Disk footprint
 
@@ -149,6 +157,9 @@ stores.
 - Service transport: TLS 1.3; mTLS inside the trust boundary.
 - Resume cursors: HMAC-SHA256 with an injected, durable 256-bit-or-stronger
   secret reference; rotate with an overlap window no longer than cursor TTL.
+- Cursor rotation: one active key and at most seven explicit overlap keys;
+  atomically replace the immutable ring and remove retired keys after TTL plus
+  allowed clock skew. Key material never appears in cursor or telemetry output.
 - Agent identity: map Agent Identity Protocol credentials to a local service
   identity and explicit capability grants.
 - Never infer human-principal identity from an avatar, model, wallet, or voice.
@@ -225,3 +236,8 @@ stores.
 - Red-team prompt injection, SSRF, path traversal, deserialization, and
   capability-escalation tests.
 - Independent privacy and security review.
+
+The `scripts/soak_sync.py` harness measures sustained SQLite commit-to-stream
+visibility, achieved throughput, bounded unacknowledged frames, traced peak
+memory, broker delivery, and errors. CI runs a two-second regression smoke only;
+the 24-hour/2× gate still requires deployment traffic and hardware baselines.

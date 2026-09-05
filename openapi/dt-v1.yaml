@@ -48,11 +48,23 @@ paths:
         "400": { description: Invalid or expired cursor }
         "403": { $ref: "#/components/responses/Denied" }
       x-websocket:
+        subprotocol: argo.dt.state-stream.v1
+        maximumControlFrameBytes: 16384
+        subscribeTimeoutSeconds: 10
+        clientIdleTimeoutSeconds: 90
         serverFrames:
           $ref: "#/components/schemas/StateStreamFrame"
         clientFrames:
           $ref: "#/components/schemas/StateStreamControlFrame"
         heartbeatSeconds: 30
+        closeCodes:
+          4400: Invalid control frame or resume cursor
+          4403: Authentication, scope, or subject authorization denied
+          4406: Required subprotocol absent
+          4408: Acknowledgement window exhausted
+          4410: Subscribe or client-idle timeout
+          4411: Authoritative stream integrity failure
+          4413: Control frame exceeds byte limit
   /v1/twins/{twin_id}/projections:
     post:
       operationId: compileProjection

@@ -421,6 +421,19 @@ class TransportPrimitiveTests(unittest.TestCase):
         )
         with self.assertRaises(ProtocolViolation):
             NatsSubjectTopology.event(tenant="tenant.*", event=event)
+        self.assertEqual(
+            "argo.dt.tenant-1.twin-1.authoritative.*",
+            NatsSubjectTopology.consumer_filter(
+                tenant="tenant-1",
+                twin_id="twin-1",
+                plane="authoritative",
+            ),
+        )
+        with self.assertRaises(ProtocolViolation):
+            NatsSubjectTopology.consumer_filter(
+                tenant="tenant-1",
+                twin_id="caller.*",
+            )
 
 
 if __name__ == "__main__":

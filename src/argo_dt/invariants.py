@@ -32,6 +32,13 @@ class InvariantId(StrEnum):
     ACKNOWLEDGED_WINDOW_BOUNDED = "DT-INV-023"
     STATE_STREAM_MINIMIZED = "DT-INV-024"
     TRANSPORT_INPUT_BOUNDED = "DT-INV-025"
+    TRANSPORT_SCOPE_VERIFIED = "DT-INV-026"
+    CURSOR_ROTATION_BOUNDED = "DT-INV-027"
+    BROKER_REDELIVERY_BOUNDED = "DT-INV-028"
+    DEADLETTER_MINIMIZED = "DT-INV-029"
+    OBSERVABILITY_MINIMIZED = "DT-INV-030"
+    TELEMETRY_RESULT_EXPLICIT = "DT-INV-031"
+    LATEST_STATE_CACHE_DERIVED = "DT-INV-032"
 
 
 @dataclass(frozen=True, slots=True)
@@ -269,6 +276,75 @@ INVARIANTS = (
         (
             "test_synchronization.TransportPrimitiveTests."
             "test_transport_limits_reject_oversized_records_batches_and_counts",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.TRANSPORT_SCOPE_VERIFIED,
+        "Network streams authenticate and authorize scope before processing",
+        "transport",
+        (
+            "test_transport_adapters.WebSocketAdapterTests."
+            "test_asgi_denies_before_accept_and_requires_subprotocol",
+            "test_transport_adapters.GrpcAdapterTests."
+            "test_grpc_rejects_missing_scope_before_processing",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.CURSOR_ROTATION_BOUNDED,
+        "Cursor key rollover accepts only a bounded explicit overlap set",
+        "security",
+        (
+            "test_transport_adapters.CursorRotationTests."
+            "test_rotation_accepts_overlap_and_revokes_pruned_key",
+            "test_transport_adapters.CursorRotationTests."
+            "test_rotation_rejects_duplicate_ids_and_unbounded_key_sets",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.BROKER_REDELIVERY_BOUNDED,
+        "JetStream derived delivery uses explicit ack and bounded retry",
+        "synchronization",
+        (
+            "test_transport_adapters.NatsAdapterTests."
+            "test_publisher_and_consumer_use_manual_ack_and_validated_subject",
+            "test_transport_adapters.NatsAdapterTests."
+            "test_bounded_redelivery_uses_payload_free_deadletter_marker",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.DEADLETTER_MINIMIZED,
+        "Dead-letter markers never duplicate canonical event payloads",
+        "privacy",
+        (
+            "test_transport_adapters.NatsAdapterTests."
+            "test_bounded_redelivery_uses_payload_free_deadletter_marker",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.OBSERVABILITY_MINIMIZED,
+        "Telemetry export rejects identity and high-cardinality attributes",
+        "observability",
+        (
+            "test_transport_adapters.ObservabilityAdapterTests."
+            "test_otel_export_is_delta_based_and_rejects_high_cardinality_attributes",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.TELEMETRY_RESULT_EXPLICIT,
+        "Every telemetry record reports committed, duplicate, or rejected",
+        "transport",
+        (
+            "test_transport_adapters.TelemetryProcessorTests."
+            "test_batch_has_explicit_partial_commit_and_idempotent_retry",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.LATEST_STATE_CACHE_DERIVED,
+        "Latest-state cache is bounded, copy-safe, and verified against SQLite head",
+        "service",
+        (
+            "test_transport_adapters.StateCacheTests."
+            "test_latest_cache_is_bounded_copy_safe_and_head_verified",
         ),
     ),
 )

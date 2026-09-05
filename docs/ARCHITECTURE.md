@@ -115,6 +115,22 @@ sessions perform cumulative acknowledgement. Public state frames are change
 notifications only; private canonical payloads stay behind the projection and
 authorization boundaries.
 
+The 0.5.0 transport shell adds concrete adapters without changing that source
+of truth. ASGI and gRPC authenticate before stream creation, then delegate all
+ordering, replay, cursor, acknowledgement, subject, and projection-plane rules
+to the same service. NATS distributes already-committed events at least once;
+OpenTelemetry observes aggregate counters only.
+
+~~~mermaid
+flowchart TB
+  CLIENTS["Devices / browsers"] --> AUTH["Injected OIDC + mTLS authenticator"]
+  AUTH --> GATE["ASGI + gRPC sync adapters"]
+  GATE --> CORE["DigitalTwinService + bounded sessions"]
+  CORE --> SQL["SQLite ledger + outbox"]
+  SQL --> BUS["In-process broker or optional JetStream"]
+  CORE -. "aggregate counters" .-> OTEL["Optional OpenTelemetry"]
+~~~
+
 Logical separation does not imply one service or database per row. The initial
 deployment should be a modular monolith plus separate heavy workers; split only
 where load, trust, or failure isolation requires it.
@@ -218,6 +234,10 @@ entire private archive. Model output remains a proposal until accepted.
 | Encrypted filesystem vault | AES-GCM Bronze evidence; object storage remains optional |
 | In-process relay | transactional-outbox delivery for the embedded profile |
 | Sync sessions | bounded SQLite replay/live handoff and signed cursor acks |
+| Latest-state cache | bounded LRU verified against SQLite head; no historical-query caching |
+| Transport shell | raw ASGI WebSocket + host-generated protobuf gRPC handlers |
+| Optional event bus | NATS JetStream manual ack, bounded retry, payload-free DLQ |
+| Observability | low-cardinality OpenTelemetry counter bridge |
 | Index adapters | SQLite FTS5 initially; optional Neo4j/vector read models |
 
 SQLite is authoritative and runs without a database service. Deploy one file
