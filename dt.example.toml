@@ -3,7 +3,12 @@ node_id = "dt-node-local"
 bind_http = "127.0.0.1:8088"
 bind_grpc = "127.0.0.1:50058"
 websocket_queue_capacity = 1024
-max_batch_events = 500
+max_in_flight_events = 128
+replay_page_events = 256
+heartbeat_seconds = 30
+max_batch_records = 500
+max_record_bytes = 1048576
+max_batch_bytes = 4194304
 
 [storage]
 event_store = "sqlite:///var/lib/argo-dt/dt.db"
@@ -18,6 +23,8 @@ default_deny = true
 require_mtls = true
 policy_bundle = "./policies/rego"
 secret_provider = "injected-key-provider"
+cursor_signing_key_ref = "secret://argo-dt/cursor-hmac"
+cursor_max_age_days = 7
 allow_raw_evidence_export = false
 
 [runtime]

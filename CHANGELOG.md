@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — 2026-09-05
+
+- Added bounded, hash-verified SQLite replay with a race-safe, duplicate-safe
+  handoff to live transactional-outbox publication.
+- Added HMAC-SHA256 resume cursors with expiry, twin binding, and private keyed
+  chain binding; raw event hashes are not disclosed in cursor payloads.
+- Added cumulative delivery acknowledgements, bounded in-flight windows,
+  explicit heartbeat/close frames, and redaction-safe synchronization metrics.
+- Added payload-minimized state notifications and subject-scoped stream access;
+  unrestricted raw event subscriptions now require an operations role.
+- Added exact transport byte/count guards, per-record telemetry acknowledgement
+  types, and validated NATS subject construction without adding a service.
+- Hardened protobuf and OpenAPI stream contracts while retaining SQLite as the
+  only required database. gRPC/WebSocket/NATS/OpenTelemetry runtime adapters
+  remain explicit deployment gates.
+
 ## 0.3.0 — 2026-09-05
 
 - Selected SQLite/WAL as the authoritative embedded ledger; Neo4j remains an

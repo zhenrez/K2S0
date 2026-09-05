@@ -27,6 +27,11 @@ class InvariantId(StrEnum):
     LOSS_REPORT_NONINTERFERENCE = "DT-INV-018"
     PRODUCER_MATCHES_ACTOR = "DT-INV-019"
     CANONICAL_SERIALIZATION = "DT-INV-020"
+    DURABLE_REPLAY_HANDOFF = "DT-INV-021"
+    AUTHENTICATED_RESUME_CURSOR = "DT-INV-022"
+    ACKNOWLEDGED_WINDOW_BOUNDED = "DT-INV-023"
+    STATE_STREAM_MINIMIZED = "DT-INV-024"
+    TRANSPORT_INPUT_BOUNDED = "DT-INV-025"
 
 
 @dataclass(frozen=True, slots=True)
@@ -217,6 +222,53 @@ INVARIANTS = (
         (
             "test_contract_conformance.ContractRegistryTests."
             "test_set_serialization_is_deterministic",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.DURABLE_REPLAY_HANDOFF,
+        "Replay-to-live handoff is ordered and duplicate-safe",
+        "synchronization",
+        (
+            "test_synchronization.DurableSynchronizationTests."
+            "test_replay_live_handoff_is_ordered_deduplicated_and_paged",
+            "test_synchronization.DurableSynchronizationTests."
+            "test_resume_cursor_replays_only_unacknowledged_tail",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.AUTHENTICATED_RESUME_CURSOR,
+        "Resume cursors are signed, twin-bound, and chain-bound",
+        "synchronization",
+        (
+            "test_synchronization.DurableSynchronizationTests."
+            "test_cursor_is_forgery_resistant_twin_bound_and_chain_bound",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.ACKNOWLEDGED_WINDOW_BOUNDED,
+        "Delivery acknowledgements are cumulative and bounded",
+        "synchronization",
+        (
+            "test_synchronization.DurableSynchronizationTests."
+            "test_ack_window_is_cumulative_bounded_and_non_regressing",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.STATE_STREAM_MINIMIZED,
+        "External state streams omit canonical payload and lineage",
+        "synchronization",
+        (
+            "test_synchronization.DurableSynchronizationTests."
+            "test_external_frame_is_payload_minimized_and_stream_is_subject_scoped",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.TRANSPORT_INPUT_BOUNDED,
+        "Telemetry records and batches have explicit byte and count ceilings",
+        "synchronization",
+        (
+            "test_synchronization.TransportPrimitiveTests."
+            "test_transport_limits_reject_oversized_records_batches_and_counts",
         ),
     ),
 )

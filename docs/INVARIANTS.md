@@ -26,6 +26,11 @@ invariant or record an explicit, reviewed divergence.
 | DT-INV-018 | Projection payloads and loss reports omit internal lineage identifiers | projection | non-interference assertion |
 | DT-INV-019 | Persisted producer identity matches the authenticated actor | authorization | spoofed-producer test |
 | DT-INV-020 | Canonical hashes are stable across unordered collection iteration | contracts | deterministic serialization test |
+| DT-INV-021 | Replay-to-live handoff is ordered, contiguous, and duplicate-safe | synchronization | replay/live race and resume tests |
+| DT-INV-022 | Resume cursors are signed, twin-bound, chain-bound, and expiry-checked | synchronization | cursor forgery/binding tests |
+| DT-INV-023 | Acknowledgements cannot regress or exceed the bounded delivery window | synchronization | cumulative ack/backpressure test |
+| DT-INV-024 | External state notifications omit canonical payload, identity, lineage, and hashes | synchronization | frame non-interference and subject-scope test |
+| DT-INV-025 | Telemetry records and batches have explicit byte and count ceilings | synchronization | transport-limit tests |
 
 The executable registry is `src/argo_dt/invariants.py`. CI verifies that every
 entry has an owner and points to discoverable executable evidence. The v1

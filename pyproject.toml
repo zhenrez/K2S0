@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argo-dt"
-version = "0.3.0"
+version = "0.4.0"
 description = "K2S0 digital-twin reference kernel and integration contracts"
 readme = "README.md"
 requires-python = ">=3.12"

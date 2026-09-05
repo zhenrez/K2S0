@@ -109,6 +109,12 @@ flowchart TB
 | Action policy port | Checks ActionEnvelope against delegated authority | Decision is audited | actor/domain |
 | Sync gateway | gRPC ingest, NATS events, WebSocket deltas, resume cursors | No | twin ID |
 
+The executable sync core is transport-neutral: SQLite is the replay source,
+the transactional outbox supplies at-least-once live publication, and bounded
+sessions perform cumulative acknowledgement. Public state frames are change
+notifications only; private canonical payloads stay behind the projection and
+authorization boundaries.
+
 Logical separation does not imply one service or database per row. The initial
 deployment should be a modular monolith plus separate heavy workers; split only
 where load, trust, or failure isolation requires it.
@@ -211,6 +217,7 @@ entire private archive. Model output remains a proposal until accepted.
 | SQLite/WAL | event ledger, snapshots, dependencies, consents, receipts, outbox |
 | Encrypted filesystem vault | AES-GCM Bronze evidence; object storage remains optional |
 | In-process relay | transactional-outbox delivery for the embedded profile |
+| Sync sessions | bounded SQLite replay/live handoff and signed cursor acks |
 | Index adapters | SQLite FTS5 initially; optional Neo4j/vector read models |
 
 SQLite is authoritative and runs without a database service. Deploy one file

@@ -7,6 +7,7 @@
 | event-envelope-v2.schema.json | Secured event envelope with authenticated producer role |
 | projection-v1.schema.json | Purpose- and recipient-bound disclosed artifact |
 | action-envelope-v1.schema.json | Separately authorized downstream action request |
+| state-stream-v1.schema.json | Payload-minimized WebSocket state/change protocol |
 
 JSON Schema defines storage and JSON interoperability. Protobuf defines the
 high-throughput wire representation. Semantic changes require a new major

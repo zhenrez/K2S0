@@ -763,7 +763,10 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(subscription.__anext__(), timeout=0.1)
 
     async def test_idempotent_retry_is_not_republished(self) -> None:
-        subscription = await self.service.subscribe("twin-1")
+        subscription = await self.service.subscribe(
+            "twin-1",
+            actor=self.operations_actor,
+        )
         event = EventEnvelope.new(
             twin_id="twin-1",
             event_type="DegradationDeclared",
@@ -786,6 +789,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(first.event_id, duplicate.event_id)
         self.assertEqual(first.event_id, (await subscription.__anext__()).event_id)
         self.assertTrue(subscription.queue.empty())
+        await subscription.aclose()
 
 
 class AuthorityTests(unittest.TestCase):

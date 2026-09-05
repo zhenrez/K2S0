@@ -8,11 +8,21 @@ from typing import Any, Mapping, Sequence
 
 from .aggregate import TwinAggregate, TwinState
 from .compiler import ProjectionCompiler
-from .errors import ConcurrencyConflict, InvariantViolation
+from .errors import AuthorizationDenied, ConcurrencyConflict, InvariantViolation
 from .ownership import EventOwnershipPolicy
 from .ports import DurableEventStore
 from .simulation import SimulationBranch, SimulationEngine
-from .sync import BoundedEventBroker, OutboxRelay, RelayBatch, Subscription
+from .sync import (
+    BoundedEventBroker,
+    CursorSigner,
+    DurableSubscription,
+    OutboxRelay,
+    RelayBatch,
+    StateStreamSession,
+    StreamPosition,
+    SyncLimits,
+    SyncMetrics,
+)
 from .types import (
     ActorContext,
     ConsentGrant,
@@ -40,6 +50,8 @@ class DigitalTwinService:
         snapshot_interval: int = 1000,
         snapshot_retention: int = 3,
         outbox_retention: timedelta = timedelta(days=7),
+        cursor_signer: CursorSigner | None = None,
+        sync_limits: SyncLimits | None = None,
     ) -> None:
         if snapshot_interval < 0:
             raise ValueError("snapshot_interval cannot be negative")
@@ -51,6 +63,9 @@ class DigitalTwinService:
         self.projection_compiler = projection_compiler
         self.broker = broker or BoundedEventBroker()
         self.outbox_relay = OutboxRelay(store=store, publisher=self.broker)
+        self.cursor_signer = cursor_signer
+        self.sync_limits = sync_limits or SyncLimits()
+        self.sync_metrics = SyncMetrics()
         self.ownership_policy = ownership_policy or EventOwnershipPolicy()
         self.simulations = SimulationEngine()
         self.snapshot_interval = snapshot_interval
@@ -428,6 +443,93 @@ class DigitalTwinService:
         self,
         twin_id: str,
         *,
+        actor: ActorContext,
         after_sequence: int = 0,
-    ) -> Subscription:
-        return await self.broker.subscribe(twin_id, after_sequence=after_sequence)
+    ) -> DurableSubscription:
+        """Open an operations-only raw event stream with durable replay."""
+
+        if ProducerRole.OPERATIONS_SERVICE not in actor.roles:
+            raise AuthorizationDenied("raw event subscriptions require operations role")
+        if actor.subject_id is not None:
+            state = self.state(twin_id)
+            self.ownership_policy.authorize_subject(actor, state.subject_id)
+        start = self._stream_position(twin_id, after_sequence)
+        return await DurableSubscription.open(
+            store=self.store,
+            broker=self.broker,
+            start=start,
+            limits=self.sync_limits,
+            metrics=self.sync_metrics,
+        )
+
+    async def open_state_stream(
+        self,
+        twin_id: str,
+        *,
+        actor: ActorContext,
+        resume_token: str | None = None,
+        event_types: Sequence[str] = (),
+        include_projection_events: bool = False,
+    ) -> StateStreamSession:
+        """Open an authorized payload-minimized state notification stream."""
+
+        trusted_global_roles = {
+            ProducerRole.OPERATIONS_SERVICE,
+            ProducerRole.PROJECTION_SERVICE,
+        }
+        if actor.subject_id is None:
+            if actor.roles.isdisjoint(trusted_global_roles):
+                raise AuthorizationDenied(
+                    "global state streams require operations or projection role"
+                )
+        else:
+            state = self.state(twin_id)
+            self.ownership_policy.authorize_subject(actor, state.subject_id)
+        cursor_signer = self.cursor_signer
+        if cursor_signer is None:
+            raise InvariantViolation(
+                "state streams require an explicitly configured cursor signer"
+            )
+        if resume_token is None:
+            start = StreamPosition(twin_id, 0, "")
+        else:
+            decoded = cursor_signer.verify(
+                resume_token,
+                twin_id=twin_id,
+            )
+            start = cursor_signer.verify_chain_binding(
+                decoded,
+                self._stream_position(twin_id, decoded.sequence),
+            )
+        planes = {EventPlane.AUTHORITATIVE}
+        if include_projection_events:
+            planes.add(EventPlane.PROJECTION)
+        subscription = await DurableSubscription.open(
+            store=self.store,
+            broker=self.broker,
+            start=start,
+            limits=self.sync_limits,
+            event_types=event_types,
+            planes=planes,
+            metrics=self.sync_metrics,
+        )
+        return StateStreamSession(
+            subscription=subscription,
+            cursor_signer=cursor_signer,
+            metrics=self.sync_metrics,
+        )
+
+    def _stream_position(self, twin_id: str, sequence: int) -> StreamPosition:
+        if sequence < 0:
+            raise InvariantViolation("after_sequence cannot be negative")
+        if sequence == 0:
+            return StreamPosition(twin_id, 0, "")
+        events = self.store.load(
+            twin_id,
+            after_sequence=sequence - 1,
+            up_to_sequence=sequence,
+            limit=1,
+        )
+        if not events or events[0].sequence != sequence:
+            raise InvariantViolation("after_sequence is not present in the event stream")
+        return StreamPosition(twin_id, sequence, events[0].event_hash)

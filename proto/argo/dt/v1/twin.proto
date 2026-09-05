@@ -7,11 +7,12 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 service DigitalTwin {
-  // High-throughput data plane. Each batch is independently idempotent.
+  // High-throughput data plane. Adapters reject records over 1 MiB, batches
+  // over 4 MiB, or batches over 500 records before domain processing.
   rpc StreamTelemetry(stream TelemetryBatch) returns (stream IngestAck);
 
-  // Ordered event/state delta subscription, resumable by sequence.
-  rpc SubscribeState(StateSubscription) returns (stream TwinEvent);
+  // Ordered payload-minimized state notifications with cursor acks/heartbeats.
+  rpc SubscribeState(stream StateStreamRequest) returns (stream StateStreamFrame);
 
   rpc GetState(GetStateRequest) returns (TwinState);
   rpc CompileProjection(CompileProjectionRequest) returns (ProjectionResponse);
@@ -56,6 +57,9 @@ message IngestAck {
   repeated string event_ids = 5;
   repeated RecordError errors = 6;
   string resume_token = 7;
+  repeated TelemetryRecordAck record_acks = 8;
+  int64 committed_sequence = 9;
+  string stream_status = 10;
 }
 
 message RecordError {
@@ -65,13 +69,85 @@ message RecordError {
   bool retryable = 4;
 }
 
-message StateSubscription {
-  string twin_id = 1;
-  int64 after_sequence = 2;
-  repeated string event_types = 3;
-  bool include_projection_events = 4;
+message TelemetryRecordAck {
+  int32 record_index = 1;
+  string source_record_id = 2;
+  // committed, duplicate, or rejected
+  string status = 3;
+  string event_id = 4;
+  int64 sequence = 5;
+  string error_code = 6;
+  bool retryable = 7;
 }
 
+message StateSubscription {
+  string twin_id = 1;
+  // Trusted operations compatibility only. Public adapters require resume_token.
+  int64 after_sequence = 2 [deprecated = true];
+  repeated string event_types = 3;
+  bool include_projection_events = 4;
+  string resume_token = 5;
+  int32 max_in_flight = 6;
+}
+
+message StateAcknowledge {
+  string resume_token = 1;
+}
+
+message ClientHeartbeat {
+  google.protobuf.Timestamp sent_at = 1;
+}
+
+message ClientClose {
+  int32 code = 1;
+  string reason = 2;
+}
+
+message StateStreamRequest {
+  oneof frame {
+    StateSubscription subscribe = 1;
+    StateAcknowledge acknowledge = 2;
+    ClientHeartbeat heartbeat = 3;
+    ClientClose close = 4;
+  }
+}
+
+message StateChange {
+  string schema_version = 1;
+  string twin_id = 2;
+  int64 sequence = 3;
+  string event_type = 4;
+  string plane = 5;
+  google.protobuf.Timestamp occurred_at = 6;
+  google.protobuf.Timestamp recorded_at = 7;
+  string resume_token = 8;
+}
+
+message ServerHeartbeat {
+  string twin_id = 1;
+  int64 acknowledged_sequence = 2;
+  string resume_token = 3;
+  google.protobuf.Timestamp sent_at = 4;
+}
+
+message ServerClose {
+  string twin_id = 1;
+  int32 code = 2;
+  string reason = 3;
+  int64 acknowledged_sequence = 4;
+  string resume_token = 5;
+}
+
+message StateStreamFrame {
+  oneof frame {
+    StateChange event = 1;
+    ServerHeartbeat heartbeat = 2;
+    ServerClose close = 3;
+  }
+}
+
+// Internal canonical envelope used by simulation and trusted service adapters.
+// It must never be emitted directly by a public state-notification endpoint.
 message TwinEvent {
   string schema_version = 1;
   string event_id = 2;

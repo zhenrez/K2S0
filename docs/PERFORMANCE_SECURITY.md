@@ -47,12 +47,25 @@ capacity evidence.
 
 ### Backpressure
 
-- gRPC flow control limits in-flight batches.
+- gRPC adapters reject more than 1 MiB/record, 4 MiB/batch, or 500
+  records/batch using the concrete serializer's exact byte count.
+- State replay reads at most 256 events/page and permits at most 128
+  unacknowledged notification frames by default.
 - NATS consumers use explicit ack, bounded max-deliver, and dead-letter lanes.
 - WebSocket queues are bounded; slow clients receive a close reason and resume
-  from the last sequence.
+  from the last acknowledged authenticated cursor.
 - Heavy workers advertise capacity and pause partition consumption.
 - No unbounded Python/JavaScript queue exists in the production path.
+
+The replay/live handoff subscribes first, captures the SQLite stream head,
+pages and hash-verifies through that position, then drains live delivery while
+discarding duplicate sequences. A detected live gap is recovered from SQLite
+in bounded pages. Missing or chain-invalid positions fail closed.
+
+`SyncMetrics.snapshot()` exposes only aggregate replay, live, duplicate,
+frame, acknowledgement, heartbeat, close, integrity-failure, and backpressure
+counters. OpenTelemetry adapters must not attach twin IDs, subject IDs, cursor
+tokens, event IDs, payloads, or hashes as attributes.
 
 ### Disk footprint
 
@@ -134,6 +147,8 @@ stores.
 - Workload identity: SPIFFE-compatible service identity or equivalent.
 - User identity: OIDC with short-lived tokens and phishing-resistant MFA.
 - Service transport: TLS 1.3; mTLS inside the trust boundary.
+- Resume cursors: HMAC-SHA256 with an injected, durable 256-bit-or-stronger
+  secret reference; rotate with an overlap window no longer than cursor TTL.
 - Agent identity: map Agent Identity Protocol credentials to a local service
   identity and explicit capability grants.
 - Never infer human-principal identity from an avatar, model, wallet, or voice.
