@@ -1,17 +1,23 @@
 # Validation record
 
-Date: 2026-09-04 UTC
+Date: 2026-09-05 UTC
 
 ## Passed
 
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant tests | 33/33 passed |
+| Invariant and persistence tests | 51/51 passed |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
 | JSON contracts | All five JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
 | Event integrity | Hash-chain verification passed |
+| SQLite migration | Executed successfully in an in-memory SQLite database |
+| Snapshot replay | Full replay and snapshot + 100-event tail produced equal state |
+| Transactional outbox | Atomic rollback, retry, lease, and process-reopen recovery passed |
+| Deletion propagation | Evidence → claim → projection invalidation queue passed |
+| Bronze encryption | AES-GCM round trip, tamper rejection, subject isolation, and no plaintext-at-rest assertion passed |
+| Projection non-interference | Public payload and receipt omit claim, evidence, model-trace, and sensitivity identifiers |
 | Package metadata | setuptools 84.0.0 is available; source-layout metadata is defined |
 
 Covered tests:
@@ -46,26 +52,33 @@ Covered tests:
   supersession, and projection revocation;
 - negative fixtures for revoked consent and simulation contamination;
 - invariant registry ownership and executable-evidence completeness.
+- hash-linked snapshots and tail replay equivalence;
+- atomic event/outbox rollback and at-least-once retry;
+- pending publication recovery after database reopen;
+- cross-connection compare-and-swap and exclusive outbox leases;
+- recursive deletion dependency queuing through projections;
+- deterministic encrypted Bronze writes, source collision rejection, and
+  authenticated decryption failure on tampering.
 
 ## Local smoke benchmark
 
-The SQLite reference adapter appended and verified 10,000 events at
-approximately 10,000 events/second in this ephemeral environment.
+The SQLite/WAL adapter appended and verified 10,000 events, including an
+outbox pointer per event, at approximately 8,596 events/second in this ephemeral
+environment. Full replay of 10,000 events had a 531.380 ms median; replay from
+a hash-verified snapshot plus 100 tail events had a 5.140 ms median (103.38×)
+across 10 iterations. Both replay paths produced identical state.
 
 This is not a production capacity result. It excludes network, authentication,
-Bronze object I/O, PostgreSQL replication, outbox publication, contention,
-multi-tenant load, and failure injection. Production SLOs in
-docs/PERFORMANCE_SECURITY.md remain targets until the specified load and soak
-tests pass.
+external publication, concurrent writers, multi-tenant load, disk-failure
+recovery, and sustained soak. Production SLOs in docs/PERFORMANCE_SECURITY.md
+remain targets until the specified load and soak tests pass.
 
 ## Not executable in this workspace
 
 | Check | Reason / required environment |
 | --- | --- |
-| Rust hot-path build | Rust toolchain is not installed |
 | Protobuf generation | protoc/buf toolchain is not present |
 | OPA policy tests | OPA toolchain is not present |
-| PostgreSQL migration | No PostgreSQL service was supplied |
 | NATS/Restate integration | No service topology was supplied |
 | Host-repository integration | Host source tree was not supplied |
 | Ruff/mypy | Optional development tools are not installed |

@@ -3,6 +3,25 @@
   "$id": "https://argo.local/schemas/projection-v1.schema.json",
   "title": "ARGO Digital Twin Projection v1",
   "type": "object",
+  "$defs": {
+    "disclosedClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "kind", "valid_from", "epistemic"],
+      "properties": {
+        "statement": { "type": "string" },
+        "kind": { "type": "string" },
+        "valid_from": { "type": "string", "format": "date-time" },
+        "valid_until": {
+          "oneOf": [
+            { "type": "string", "format": "date-time" },
+            { "type": "null" }
+          ]
+        },
+        "epistemic": { "type": "object" }
+      }
+    }
+  },
   "additionalProperties": false,
   "required": [
     "schema_version",
@@ -52,7 +71,15 @@
           "artifact_id": { "type": "string", "format": "uuid" },
           "status": { "enum": ["ready", "degraded"] },
           "source_sequence": { "type": "integer", "minimum": 0 },
-          "payload": { "type": "object" },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "claims": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/disclosedClaim" }
+              }
+            }
+          },
           "loss_report": { "type": "object" },
           "artifact_hash": {
             "type": "string",
@@ -63,4 +90,3 @@
     }
   }
 }
-

@@ -208,10 +208,16 @@ entire private archive. Model output remains a proposal until accepted.
 | dt-worker | normalization, identity, claim, compiler, evaluation workers |
 | dt-policy | OPA bundle and identity/capability verification |
 | dt-runtime | Restate durable objects/workflows |
-| PostgreSQL | stream heads, event ledger, read models, consents, receipts, outbox |
-| Object store | encrypted Bronze evidence and large compiled artifacts |
-| NATS JetStream | low-latency event distribution and replay window |
-| Index adapters | PostgreSQL FTS/vector initially; optional graph/search stores |
+| SQLite/WAL | event ledger, snapshots, dependencies, consents, receipts, outbox |
+| Encrypted filesystem vault | AES-GCM Bronze evidence; object storage remains optional |
+| In-process relay | transactional-outbox delivery for the embedded profile |
+| Index adapters | SQLite FTS5 initially; optional Neo4j/vector read models |
+
+SQLite is authoritative and runs without a database service. Deploy one file
+per tenant or equivalent security boundary. Neo4j must never become the claim
+ledger: if introduced, it is rebuilt from the event stream and dependency
+tables. Delivered outbox pointers and superseded snapshots have bounded
+retention; authoritative history is never silently compacted.
 
 Heavy capture, OCR, speech, embedding, model, and simulation workers are
 separate processes. The control API remains available when those workers are
@@ -252,4 +258,3 @@ The reference tests cover a first subset; production conformance must cover all:
 18. Degraded artifacts identify their missing stages.
 19. Every high-level assertion traces to evidence.
 20. Root-signed constitutional constraints outrank MorphIQ proposals.
-

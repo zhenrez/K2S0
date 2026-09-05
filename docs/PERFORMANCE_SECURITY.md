@@ -3,7 +3,7 @@
 ## 1. Service objectives
 
 These are proposed acceptance targets, not measured claims. The included
-SQLite benchmark is a local smoke tool and must not be presented as production
+SQLite benchmarks are local smoke tools and must not be presented as production
 capacity evidence.
 
 | Signal | Initial SLO target | Measurement boundary |
@@ -14,20 +14,21 @@ capacity evidence.
 | Projection compile, cached/no model | p99 ≤ 75 ms | request to signed receipt |
 | Projection compile with model | p95 ≤ 2 s or declared async | excludes provider queue beyond timeout budget |
 | Availability | 99.95% control/query, 99.9% ingest | monthly, excluding declared maintenance |
-| Recovery point | 0 committed ledger events | synchronous database quorum |
-| Recovery time | ≤ 15 minutes regional service | tested restore/failover |
+| Recovery point | 0 acknowledged events for process crash | FULL-sync SQLite commit |
+| Recovery time | ≤ 15 minutes | tested file + Bronze restore procedure |
 | Stream replay | ≥ 7 days hot | durable ledger remains canonical |
 
 ## 2. Performance design
 
 ### Write path
 
-- Partition by twin ID; never serialize unrelated twins.
+- Serialize writes per SQLite database; shard by tenant/profile only after
+  measurement proves one file insufficient.
 - Batch 100–500 small records or 1–5 MB, whichever comes first.
 - Store large binary evidence in the Bronze object store before ledger commit;
   event payload carries content hash and object reference.
-- Use prepared statements, connection pooling, and one transaction for stream
-  head + event + outbox.
+- Use prepared statements and one `BEGIN IMMEDIATE` transaction for event,
+  dependency index, invalidation queue, and outbox.
 - Return after durable commit, not after all derived indexes update.
 - Idempotency removes retry duplicates; it does not merge distinct evidence.
 
@@ -35,12 +36,14 @@ capacity evidence.
 
 - Rebuild from snapshot + tail events.
 - Snapshot every 1,000 events initially, then adapt by replay cost.
+- Retain the newest three snapshots per twin by default; snapshots are caches,
+  while the event stream remains canonical.
 - Cache compiled artifacts by source sequence + bitemporal instant + purpose +
   recipient + policy version + compiler version.
 - Invalidate on source correction/deletion, consent change, policy change, or
   schema/compiler version.
-- Use PostgreSQL FTS/vector or dedicated indexes only as candidate retrieval;
-  rehydrate canonical claims by ID.
+- Use SQLite FTS5/vector extensions or a derived Neo4j/search adapter only for
+  candidate retrieval; rehydrate canonical claims by ID.
 
 ### Backpressure
 
@@ -51,18 +54,30 @@ capacity evidence.
 - Heavy workers advertise capacity and pause partition consumption.
 - No unbounded Python/JavaScript queue exists in the production path.
 
+### Disk footprint
+
+- Outbox rows store an event reference and delivery metadata, not a second copy
+  of the event payload.
+- Prune delivered outbox rows after the configured audit window (seven days in
+  the embedded example); never prune pending rows.
+- Use incremental vacuum and a WAL truncate checkpoint during a quiet
+  maintenance window. Neither operation deletes canonical events.
+- Bronze deletion unlinks the encrypted object but cannot promise physical
+  overwrite on SSD/copy-on-write media; cryptographic erasure requires a
+  per-subject key provider with key destruction.
+
 ### Hot-path implementation
 
-Port EventEnvelope canonicalization, validation, batching, hash chaining,
-projection minimization, and WebSocket fan-out to Rust. Keep Python for source
-adapters, evaluation, research, and model orchestration. Cross-language
-boundaries use protobuf, not shared in-process objects.
+Profile before adding another runtime. Preserve EventEnvelope canonicalization,
+hash chaining, and projection semantics if a measured hotspot is later moved
+to native code. Cross-language boundaries use protobuf, not shared in-process
+objects.
 
 ## 3. Scaling model
 
 | Axis | Partition/shard | Coordination |
 | --- | --- | --- |
-| Ledger writes | twin ID | one stream head CAS |
+| Ledger writes | SQLite file, then twin ID | one writer transaction + stream CAS |
 | Bronze bytes | subject ID/content hash | object store |
 | Normalization | connector/source type | event sequence checkpoint |
 | Claim/model work | subject + domain | durable workflow |
@@ -126,7 +141,8 @@ stores.
 ### Authorization
 
 - Deny by default at database, API, policy, and connector layers.
-- PostgreSQL RLS scopes subject data; app roles cannot disable RLS.
+- Separate SQLite files or encrypted volumes scope tenants; every query and
+  service transition also carries explicit subject scope.
 - Consent grants control knowledge disclosure.
 - Authority grants control external actions.
 - Purpose, recipient, sensitivity, field set, TTL, reversibility, impact, and
@@ -168,7 +184,7 @@ stores.
 | Threat | Primary mitigation |
 | --- | --- |
 | Prompt injection in captured content | Treat content as data; sandbox workers; policy outside LLM |
-| Cross-subject retrieval | RLS + explicit subject scope + negative isolation tests |
+| Cross-subject retrieval | database-per-tenant + explicit subject scope + negative isolation tests |
 | Membership inference through errors | Generic denial; no excluded-field metadata |
 | Model self-contamination | source ancestry graph; generated outputs marked derived |
 | Simulation laundering | distinct event plane and review-only promotion |
@@ -194,4 +210,3 @@ stores.
 - Red-team prompt injection, SSRF, path traversal, deserialization, and
   capability-escalation tests.
 - Independent privacy and security review.
-

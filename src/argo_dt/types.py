@@ -345,6 +345,97 @@ class EventEnvelope:
 
 
 @dataclass(frozen=True, slots=True)
+class SnapshotRecord:
+    """Hash-covered materialized state linked to one event-chain position."""
+
+    twin_id: str
+    sequence: int
+    last_event_hash: str
+    state: Mapping[str, Any]
+    state_hash: str
+    created_at: datetime
+    schema_version: str = "argo.dt.snapshot/v1"
+
+    @classmethod
+    def new(
+        cls,
+        *,
+        twin_id: str,
+        sequence: int,
+        last_event_hash: str,
+        state: Mapping[str, Any],
+        created_at: datetime | None = None,
+    ) -> SnapshotRecord:
+        material = {
+            "schema_version": "argo.dt.snapshot/v1",
+            "twin_id": twin_id,
+            "sequence": sequence,
+            "last_event_hash": last_event_hash,
+            "state": dict(state),
+        }
+        return cls(
+            twin_id=twin_id,
+            sequence=sequence,
+            last_event_hash=last_event_hash,
+            state=dict(state),
+            state_hash=content_hash(material),
+            created_at=created_at or utc_now(),
+        )
+
+    def verify(self) -> None:
+        if self.schema_version != "argo.dt.snapshot/v1":
+            raise IntegrityError("unsupported snapshot schema version")
+        if self.sequence < 1 or not self.twin_id or not self.last_event_hash:
+            raise IntegrityError("snapshot stream position is incomplete")
+        material = {
+            "schema_version": self.schema_version,
+            "twin_id": self.twin_id,
+            "sequence": self.sequence,
+            "last_event_hash": self.last_event_hash,
+            "state": dict(self.state),
+        }
+        if self.state_hash != content_hash(material):
+            raise IntegrityError("snapshot state hash mismatch")
+
+
+@dataclass(frozen=True, slots=True)
+class OutboxRecord:
+    """An event publication claimed from the transactional outbox."""
+
+    topic: str
+    key: str
+    event: EventEnvelope
+    created_at: datetime
+    attempts: int
+    lease_owner: str
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidationRecord:
+    """A durable dependency invalidation caused by evidence deletion."""
+
+    twin_id: str
+    deletion_sequence: int
+    source_evidence_id: str
+    dependent_kind: str
+    dependent_id: str
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class BronzeObject:
+    """Metadata returned after authenticated Bronze object decryption."""
+
+    object_uri: str
+    subject_id: str
+    media_type: str
+    content_hash: str
+    metadata: Mapping[str, Any]
+    key_id: str
+    created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class ConsentGrant:
     consent_id: str
     subject_id: str
@@ -403,6 +494,21 @@ class ProjectionReceipt:
     source_claim_ids: tuple[str, ...]
     artifact_hash: str
     decision_reasons: tuple[str, ...]
+
+    def to_public_dict(self) -> JsonObject:
+        """Return the transport receipt without private lineage identifiers."""
+
+        return {
+            "projection_id": self.projection_id,
+            "request_id": self.request_id,
+            "consent_id": self.consent_id,
+            "policy_version": self.policy_version,
+            "issued_at": to_primitive(self.issued_at),
+            "expires_at": to_primitive(self.expires_at),
+            "source_sequence": self.source_sequence,
+            "disclosed_fields": list(self.disclosed_fields),
+            "artifact_hash": self.artifact_hash,
+        }
 
 
 @dataclass(frozen=True, slots=True)

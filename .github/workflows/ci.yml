@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install PyYAML==6.0.2
+      - run: python -m pip install PyYAML==6.0.2 cryptography==46.0.0
       - run: PYTHONPATH=src python -m unittest discover -s tests -v
       - run: make contracts
       - run: python -m compileall -q src tests scripts

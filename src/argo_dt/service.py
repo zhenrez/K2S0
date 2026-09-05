@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Mapping, Sequence
 
 from .aggregate import TwinAggregate, TwinState
 from .compiler import ProjectionCompiler
 from .errors import ConcurrencyConflict, InvariantViolation
 from .ownership import EventOwnershipPolicy
-from .ports import EventStore
+from .ports import DurableEventStore
 from .simulation import SimulationBranch, SimulationEngine
-from .sync import BoundedEventBroker, Subscription
+from .sync import BoundedEventBroker, OutboxRelay, RelayBatch, Subscription
 from .types import (
     ActorContext,
     ConsentGrant,
@@ -33,16 +33,29 @@ class DigitalTwinService:
     def __init__(
         self,
         *,
-        store: EventStore,
+        store: DurableEventStore,
         projection_compiler: ProjectionCompiler,
         broker: BoundedEventBroker | None = None,
         ownership_policy: EventOwnershipPolicy | None = None,
+        snapshot_interval: int = 1000,
+        snapshot_retention: int = 3,
+        outbox_retention: timedelta = timedelta(days=7),
     ) -> None:
+        if snapshot_interval < 0:
+            raise ValueError("snapshot_interval cannot be negative")
+        if snapshot_retention < 1:
+            raise ValueError("snapshot_retention must be positive")
+        if outbox_retention <= timedelta(0):
+            raise ValueError("outbox_retention must be positive")
         self.store = store
         self.projection_compiler = projection_compiler
         self.broker = broker or BoundedEventBroker()
+        self.outbox_relay = OutboxRelay(store=store, publisher=self.broker)
         self.ownership_policy = ownership_policy or EventOwnershipPolicy()
         self.simulations = SimulationEngine()
+        self.snapshot_interval = snapshot_interval
+        self.snapshot_retention = snapshot_retention
+        self.outbox_retention = outbox_retention
 
     async def append(
         self,
@@ -67,8 +80,24 @@ class DigitalTwinService:
             TwinAggregate.apply(self.state(event.twin_id), preview)
         persisted = self.store.append(event, expected_sequence=expected_sequence)
         if persisted.sequence > head_sequence:
-            await self.broker.publish(persisted)
+            if (
+                self.snapshot_interval > 0
+                and persisted.sequence % self.snapshot_interval == 0
+            ):
+                state = TwinAggregate.rebuild(self.store, persisted.twin_id)
+                self.store.save_snapshot(state.to_snapshot())
+                self.store.prune_snapshots(
+                    persisted.twin_id,
+                    keep=self.snapshot_retention,
+                )
+                self.store.prune_outbox(
+                    published_before=utc_now() - self.outbox_retention
+                )
+        await self.outbox_relay.drain()
         return persisted
+
+    async def flush_publications(self, *, limit: int = 100) -> RelayBatch:
+        return await self.outbox_relay.drain(limit=limit)
 
     async def ingest_evidence(
         self,
@@ -122,6 +151,44 @@ class DigitalTwinService:
                 "valid_from": valid_from.isoformat(),
                 "valid_until": valid_until.isoformat() if valid_until else None,
                 "independence_group": independence_group,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def delete_evidence(
+        self,
+        *,
+        twin_id: str,
+        evidence_id: str,
+        reason: str,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "EvidenceDeleted",
+            ProducerRole.INGEST_SERVICE,
+            actor,
+        )
+        state = self.state(twin_id)
+        self.ownership_policy.authorize_subject(actor, state.subject_id)
+        if state.sequence != expected_sequence:
+            raise ConcurrencyConflict(
+                f"deletion expected {expected_sequence}, state is {state.sequence}"
+            )
+        if evidence_id not in state.evidence:
+            raise InvariantViolation("cannot delete unknown evidence")
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="EvidenceDeleted",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.INGEST_SERVICE,
+            idempotency_key=idempotency_key,
+            payload={
+                "evidence_id": evidence_id,
+                "reason": reason,
+                "subject_id": state.subject_id,
             },
         )
         return await self.append(event, actor=actor, expected_sequence=expected_sequence)
@@ -242,6 +309,7 @@ class DigitalTwinService:
         return TwinAggregate.rebuild(
             self.store,
             twin_id,
+            snapshot_store=self.store,
             up_to_sequence=up_to_sequence,
             as_of_recorded_time=as_of_recorded_time,
         )
@@ -292,6 +360,7 @@ class DigitalTwinService:
                 "receipt_hash": content_hash(receipt),
                 "disclosed_fields": list(receipt.disclosed_fields),
                 "source_sequence": receipt.source_sequence,
+                "source_claim_ids": list(receipt.source_claim_ids),
             },
         )
         persisted = await self.append(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import unittest
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 from argo_dt.compiler import ProjectionCompiler
@@ -100,6 +101,7 @@ class StoreTests(unittest.TestCase):
             producer="test",
             producer_role=ProducerRole.OPERATIONS_SERVICE,
             idempotency_key=key,
+            occurred_at=datetime(2026, 1, 1, tzinfo=UTC),
         )
 
     def test_hash_chain_and_idempotency(self) -> None:
@@ -134,6 +136,14 @@ class StoreTests(unittest.TestCase):
         )
         with self.assertRaises(InvariantViolation):
             self.store.append(changed_producer, expected_sequence=0)
+
+        changed_occurrence = self.event("same-key")
+        changed_occurrence = replace(
+            changed_occurrence,
+            occurred_at=changed_occurrence.occurred_at + timedelta(seconds=1),
+        )
+        with self.assertRaises(InvariantViolation):
+            self.store.append(changed_occurrence, expected_sequence=0)
 
     def test_optimistic_concurrency(self) -> None:
         self.store.append(self.event("one"), expected_sequence=0)
@@ -345,6 +355,26 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             actor=self.ingest_actor,
         )
         self.assertNotEqual(first.payload["evidence_id"], second.payload["evidence_id"])
+
+    async def test_source_record_change_requires_explicit_correction(self) -> None:
+        await self.ingest()
+        with self.assertRaisesRegex(InvariantViolation, "correction event"):
+            await self.service.ingest_evidence(
+                twin_id="twin-1",
+                subject_id="human-1",
+                source="unit-test",
+                source_record_id="record-0",
+                payload={"text": "silently replaced"},
+                rights={"processing": ["modeling"]},
+                sensitivity=Sensitivity.INTERNAL,
+                valid_from=self.instant,
+                valid_until=None,
+                independence_group="session-0",
+                expected_sequence=1,
+                idempotency_key="evidence-replacement",
+                actor=self.ingest_actor,
+            )
+        self.assertEqual(1, self.store.head("twin-1")[0])
 
     async def test_invalid_transition_is_rejected_before_persistence(self) -> None:
         invalid = EventEnvelope.new(
@@ -671,8 +701,23 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             actor=self.projection_actor,
         )
         claims = projection["artifacts"]["decision_model"]["payload"]["claims"]
-        self.assertEqual([internal.payload["claim_id"]], [item["claim_id"] for item in claims])
+        self.assertEqual(
+            [internal.payload["statement"]],
+            [item["statement"] for item in claims],
+        )
+        self.assertIn(str(internal.payload["claim_id"]), receipt.source_claim_ids)
         self.assertNotIn(str(restricted.payload["claim_id"]), receipt.source_claim_ids)
+        self.assertNotIn("source_claim_ids", receipt.to_public_dict())
+        for internal_field in {
+            "claim_id",
+            "subject_id",
+            "provenance",
+            "model_trace",
+            "recorded_at",
+            "review_state",
+            "sensitivity",
+        }:
+            self.assertNotIn(internal_field, claims[0])
         self.assertEqual(EventPlane.PROJECTION, event.plane)
         for artifact in projection["artifacts"].values():
             self.assertEqual({"degraded"}, set(artifact["loss_report"]))

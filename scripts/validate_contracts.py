@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-import sys
+import sqlite3
 from pathlib import Path
 
 try:
@@ -47,6 +47,22 @@ def main() -> None:
     schema_roles = set(event_schema["properties"]["producer_role"]["enum"])
     if schema_roles != EXPECTED_ROLES:
         fail("EventEnvelope producer roles drifted from the frozen role set")
+    disclosed_claim = schemas["projection-v1.schema.json"]["$defs"][
+        "disclosedClaim"
+    ]
+    if disclosed_claim.get("additionalProperties") is not False:
+        fail("projection claims must deny undisclosed internal fields")
+    forbidden_projection_fields = {
+        "claim_id",
+        "subject_id",
+        "provenance",
+        "model_trace",
+        "recorded_at",
+        "review_state",
+        "sensitivity",
+    }
+    if forbidden_projection_fields.intersection(disclosed_claim["properties"]):
+        fail("projection claim schema exposes internal lineage fields")
 
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
@@ -66,11 +82,41 @@ def main() -> None:
     if "google.protobuf.Struct projection = 1;" not in proto:
         fail("protobuf projection response drifted from the REST/service contract")
     sql = (ROOT / "db" / "migrations" / "0001_dt.sql").read_text()
-    if "producer_role text NOT NULL" not in sql:
-        fail("PostgreSQL event ledger is missing producer_role")
+    if "producer_role text not null" not in sql.lower():
+        fail("SQLite event ledger is missing producer_role")
+    forbidden_postgres = {
+        "PARTITION BY",
+        "tstzrange",
+        "::jsonb",
+        "ENABLE ROW LEVEL SECURITY",
+    }
+    if any(token in sql for token in forbidden_postgres):
+        fail("SQLite migration contains PostgreSQL-only syntax")
+    connection = sqlite3.connect(":memory:")
+    try:
+        connection.executescript(sql)
+        tables = {
+            str(row[0])
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+    except sqlite3.Error as exc:
+        fail(f"SQLite migration does not execute: {exc}")
+    finally:
+        connection.close()
+    required_tables = {
+        "dt_events",
+        "dt_snapshots",
+        "dt_outbox",
+        "dt_dependencies",
+        "dt_invalidation_queue",
+    }
+    if not required_tables.issubset(tables):
+        fail("SQLite migration is missing authoritative persistence tables")
 
     print(
-        f"validated {len(schema_files)} JSON Schemas, OpenAPI 3.1, protobuf, and SQL"
+        f"validated {len(schema_files)} JSON Schemas, OpenAPI 3.1, protobuf, and SQLite"
     )
 
 

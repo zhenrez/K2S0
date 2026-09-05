@@ -6,11 +6,15 @@ from datetime import datetime
 from typing import Iterable, Mapping, Protocol
 
 from .types import (
+    BronzeObject,
     ConsentGrant,
     EventEnvelope,
     EventPlane,
+    InvalidationRecord,
     JsonObject,
+    OutboxRecord,
     ProjectionRequest,
+    SnapshotRecord,
 )
 
 
@@ -32,6 +36,56 @@ class EventStore(Protocol):
     def verify_chain(self, twin_id: str) -> bool: ...
 
 
+class SnapshotStore(Protocol):
+    def save_snapshot(self, snapshot: SnapshotRecord) -> SnapshotRecord: ...
+
+    def load_snapshot(
+        self,
+        twin_id: str,
+        *,
+        up_to_sequence: int | None = None,
+    ) -> SnapshotRecord | None: ...
+
+    def prune_snapshots(self, twin_id: str, *, keep: int = 3) -> int: ...
+
+
+class OutboxStore(Protocol):
+    def claim_outbox(
+        self,
+        *,
+        lease_owner: str,
+        limit: int = 100,
+        lease_seconds: int = 30,
+    ) -> list[OutboxRecord]: ...
+
+    def mark_outbox_published(self, record: OutboxRecord) -> bool: ...
+
+    def release_outbox(self, record: OutboxRecord, *, error: str) -> bool: ...
+
+    def outbox_backlog(self) -> int: ...
+
+    def prune_outbox(self, *, published_before: datetime, limit: int = 1000) -> int: ...
+
+
+class DependencyIndex(Protocol):
+    def dependents(
+        self,
+        twin_id: str,
+        source_kind: str,
+        source_id: str,
+        *,
+        transitive: bool = True,
+    ) -> tuple[tuple[str, str], ...]: ...
+
+    def pending_invalidations(self, *, limit: int = 100) -> list[InvalidationRecord]: ...
+
+    def mark_invalidation_processed(self, record: InvalidationRecord) -> bool: ...
+
+
+class DurableEventStore(EventStore, SnapshotStore, OutboxStore, DependencyIndex, Protocol):
+    """Persistence contract required by the DT-1 service boundary."""
+
+
 class BronzeVault(Protocol):
     def put(
         self,
@@ -41,6 +95,10 @@ class BronzeVault(Protocol):
         content: bytes,
         metadata: Mapping[str, object],
     ) -> tuple[str, str]: ...
+
+    def get(self, *, subject_id: str, object_uri: str) -> tuple[BronzeObject, bytes]: ...
+
+    def delete(self, *, subject_id: str, object_uri: str) -> bool: ...
 
 
 class ConsentStore(Protocol):
@@ -87,4 +145,3 @@ class Connector(Protocol):
     connector_version: str
 
     def read(self, cursor: str | None) -> Iterable[JsonObject]: ...
-

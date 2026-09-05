@@ -48,9 +48,9 @@ license, dependency, security, and code-level compatibility review.
   same command path creates duplicate histories and unclear retry ownership.
   Restate is selected for entity-oriented twin state; Temporal remains the
   migration option for very long, operator-heavy workflows.
-- **PostgreSQL AND object storage AND NATS JetStream** is the initial physical
-  configuration: authoritative structured state, large private bytes, and
-  low-latency distribution respectively.
+- **SQLite/WAL AND encrypted local Bronze storage** is the initial physical
+  configuration: no database service is required. NATS is an optional later
+  transport, and Neo4j is an optional rebuildable read model only.
 - **Graph/vector indexes OPTIONAL**: they accelerate retrieval but cannot
   become the claim ledger.
 - **Fine-tune/voice/avatar OPTIONAL AND downstream**: they consume compiled
@@ -133,10 +133,10 @@ The initial configuration should be reopened if:
   durable runtime, policy engine, schema registry, or database;
 - an internal “dt” repository family exists and defines conflicting canonical
   contracts;
-- measured latency shows PostgreSQL/outbox is insufficient for the hot path;
+- measured latency or graph traversal depth exceeds the SQLite profile's
+  targets, justifying sharded SQLite or a derived Neo4j index;
 - Restate cannot satisfy replay, operational, or ecosystem requirements;
 - a retained knowledge engine demonstrably preserves provenance, bitemporal
   state, contradiction, deletion propagation, and policy more completely than
   the current ARGOCell/event design;
 - license review blocks a selected direct dependency.
-

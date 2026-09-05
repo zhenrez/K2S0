@@ -57,6 +57,11 @@ INVARIANTS = (
         (
             "test_dt_invariants.StoreTests.test_hash_chain_and_idempotency",
             "test_contract_conformance.GoldenReplayTests.test_golden_replay_is_stable",
+            "test_persistence.SnapshotIntegrityTests.test_snapshot_tampering_is_detected",
+            "test_persistence.SnapshotIntegrityTests."
+            "test_snapshot_must_link_to_exact_event_hash",
+            "test_persistence.SQLiteConcurrencyTests."
+            "test_two_connections_preserve_compare_and_swap",
         ),
     ),
     InvariantSpec(
@@ -66,6 +71,11 @@ INVARIANTS = (
         (
             "test_dt_invariants.StoreTests.test_hash_chain_and_idempotency",
             "test_dt_invariants.ServiceTests.test_idempotent_retry_is_not_republished",
+            "test_persistence.TransactionalOutboxTests.test_outbox_failure_rolls_back_event",
+            "test_persistence.TransactionalOutboxTests."
+            "test_failed_publish_remains_pending_and_retries",
+            "test_persistence.SQLiteConcurrencyTests."
+            "test_outbox_claim_is_exclusive_across_connections",
         ),
     ),
     InvariantSpec(
@@ -96,7 +106,11 @@ INVARIANTS = (
         InvariantId.NO_SILENT_OVERWRITE,
         "Corrections and supersession remain events",
         "aggregate",
-        ("test_contract_conformance.GoldenReplayTests.test_golden_replay_is_stable",),
+        (
+            "test_contract_conformance.GoldenReplayTests.test_golden_replay_is_stable",
+            "test_dt_invariants.ServiceTests."
+            "test_source_record_change_requires_explicit_correction",
+        ),
     ),
     InvariantSpec(
         InvariantId.SIMULATION_ISOLATION,
@@ -105,6 +119,8 @@ INVARIANTS = (
         (
             "test_dt_invariants.ServiceTests.test_simulation_is_isolated_from_authoritative_state",
             "test_dt_invariants.ServiceTests.test_event_plane_ownership_is_enforced",
+            "test_persistence.SQLitePersistenceConformance."
+            "test_authoritative_store_rejects_simulation_plane",
         ),
     ),
     InvariantSpec(
@@ -155,6 +171,10 @@ INVARIANTS = (
         (
             "test_dt_invariants.ServiceTests."
             "test_evidence_deletion_invalidates_dependent_claim",
+            "test_persistence.DependencyInvalidationTests."
+            "test_evidence_deletion_queues_transitive_claim_and_projection",
+            "test_persistence.DependencyInvalidationTests."
+            "test_dependency_index_rebuilds_from_existing_events",
         ),
     ),
     InvariantSpec(
@@ -177,7 +197,7 @@ INVARIANTS = (
     ),
     InvariantSpec(
         InvariantId.LOSS_REPORT_NONINTERFERENCE,
-        "Projection loss reports do not reveal hidden identifiers",
+        "Projection payloads and loss reports do not reveal internal identifiers",
         "projection",
         ("test_dt_invariants.ServiceTests.test_projection_excludes_more_sensitive_claims",),
     ),
