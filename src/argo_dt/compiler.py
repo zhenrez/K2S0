@@ -92,13 +92,11 @@ class KernelCompiler:
                     end = parse_time(end_raw) if end_raw else None
                     if valid_at < start or (end is not None and valid_at >= end):
                         return False
-                if (
+                return not (
                     known_at is not None
                     and claim.get("recorded_at")
                     and parse_time(claim["recorded_at"]) > known_at
-                ):
-                    return False
-                return True
+                )
 
             selected = [
                 state.claims[claim_id]
