@@ -7,7 +7,6 @@ from collections.abc import Mapping
 from .errors import AuthorizationDenied, InvariantViolation
 from .types import ActorContext, EventEnvelope, ProducerRole
 
-
 EVENT_OWNERS: Mapping[str, frozenset[ProducerRole]] = {
     "EvidenceIngested": frozenset({ProducerRole.INGEST_SERVICE}),
     "EvidenceDeleted": frozenset({ProducerRole.INGEST_SERVICE}),

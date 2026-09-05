@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import Iterable, Mapping, Protocol
+from typing import Protocol
 
 from .types import (
     BronzeObject,

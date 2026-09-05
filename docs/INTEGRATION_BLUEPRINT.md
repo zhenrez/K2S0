@@ -20,7 +20,7 @@ The package defines ports in **src/argo_dt/ports.py**. Production adapters:
 | --- | --- | --- |
 | EventStore | SQLite/WAL + transactional outbox | sharded SQLite files; Restate state |
 | BronzeVault | S3-compatible object store with envelope encryption | local encrypted filesystem |
-| TelemetryPublisher | NATS JetStream | Kafka/Redpanda |
+| TelemetryPublisher | bounded in-process broker | optional NATS JetStream; Kafka/Redpanda |
 | ConsentStore | SQLite in the same tenant boundary | external policy registry |
 | PolicyEvaluator | OPA/Rego sidecar or embedded WASM | Cedar/custom deterministic engine |
 | ModelWorker | Portkey-routed provider or local model | any versioned worker |
@@ -34,6 +34,20 @@ The embedded profile supplies durable synchronization directly over the SQLite
 ledger and in-process outbox. `DurableSubscription` subscribes to live delivery
 before capturing the SQLite head, pages replay to that head, then deduplicates
 the live handoff by verified sequence and chain position.
+
+Executable adapters are under `src/argo_dt/adapters/`:
+
+| Adapter | Binding | Required deployment input |
+| --- | --- | --- |
+| `StateWebSocketApp` | ASGI 3 WebSocket state stream | OIDC/mTLS authenticator + ASGI server |
+| `DigitalTwinGrpcAdapter` | telemetry/state bidi RPCs + health | generated protobuf + grpcio server |
+| `JetStreamPublisher` | transactional-outbox publication | nats.py JetStream context + tenant |
+| `JetStreamConsumer` | manual ack, bounded retry, payload-free DLQ | durable consumer + derived handler |
+| `OpenTelemetrySyncExporter` | sync counters → OTel deltas | configured MeterProvider/export pipeline |
+
+Every network adapter requires an injected `Authenticator`. It receives raw
+transport credentials and returns a verified `ActorContext` plus scopes;
+transport code never manufactures roles from caller-controlled payloads.
 
 ## 3. Transport selection
 
@@ -67,6 +81,11 @@ Defined in **proto/argo/dt/v1/twin.proto**.
 - ProposeSimulationPromotion
 - CheckAction
 
+The 0.5.0 reference adapter executes `StreamTelemetry`, `SubscribeState`, and
+`Health`. Remaining RPCs fail closed as `UNIMPLEMENTED` until a host package
+binds its identity, consent, policy, and simulation services. Generate Python
+modules with `make grpc-generate`; CI imports the generated contract.
+
 ### Control plane: REST
 
 Defined in **openapi/dt-v1.yaml**.
@@ -90,6 +109,11 @@ Endpoint:
 ~~~text
 wss://host/v1/twins/{twin_id}/events
 ~~~
+
+Required subprotocol: `argo.dt.state-stream.v1`. Authentication and the
+`dt.stream` scope are checked before ASGI acceptance. The initial subscribe
+frame must arrive within 10 seconds; control frames are capped at 16 KiB and
+client silence at 90 seconds by default.
 
 Server frames:
 
@@ -128,7 +152,14 @@ argo.dt.<tenant>.<twin>.deadletter.<stage>
 ~~~
 
 The subject name is routing metadata, not authorization. Every payload carries
-identity, purpose, sensitivity, schema version, trace context, and event hash.
+the canonical EventEnvelope v2 identity, owner role, ordering, lineage, schema,
+and hash material. Event-specific purpose and sensitivity remain inside the
+payload only when that event schema defines them.
+
+JetStream is an acceleration and work-distribution layer, never canonical
+storage. Failed derived work is replayed from SQLite by twin and sequence.
+Dead-letter messages contain only those coordinates, stage, delivery count,
+time, and a bounded reason code—not the event payload, event ID, hash, or cursor.
 
 | Producer | Permitted events |
 | --- | --- |
@@ -225,6 +256,22 @@ sequenceDiagram
 
 CRDTs are suitable for non-authoritative annotations and draft UI state, not
 for collapsing epistemic contradictions.
+
+### Cursor key rotation
+
+`RotatingCursorSigner` issues with one active key and accepts at most seven
+explicit overlap keys. Existing v1 cursor wire data remains compatible; the
+matching key is identified by MAC verification, never a caller-trusted key ID.
+Deployment constructs a new immutable ring and atomically swaps it into the
+service. Removing a retired key revokes its outstanding cursors. The overlap
+must cover the configured cursor TTL plus clock skew.
+
+### Observability
+
+`OpenTelemetrySyncExporter` converts cumulative synchronization counters into
+monotonic deltas. Its attribute allow-list is limited to service name/version,
+deployment environment, and network transport. Twin, subject, event, evidence,
+payload, hash, and resume-token dimensions are structurally unavailable.
 
 ## 8. Connector contract
 

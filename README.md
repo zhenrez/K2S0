@@ -16,6 +16,9 @@ provides:
 - an AES-256-GCM Bronze vault and durable transitive deletion invalidation;
 - bitemporal state, isolated simulation branches, default-deny projection
   compilation, bounded durable replay/live synchronization, and signed cursors;
+- a bounded, SQLite-head-verified latest-state cache for sustained ingest;
+- executable ASGI WebSocket and gRPC synchronization adapters, optional NATS
+  JetStream delivery, bounded key rollover, and OpenTelemetry metric export;
 - gRPC, REST, WebSocket, JSON Schema, SQL, and Rego integration contracts;
 - a repository-pattern disposition map and a host merge contract.
 
@@ -83,10 +86,19 @@ flowchart TB
 ~~~bash
 make test
 make demo
+make soak-sync
 ~~~
 
 The kernel uses Python's standard library. The encrypted Bronze adapter uses
-the pinned `bronze` extra; optional lint and type checking tools are in `dev`.
+the pinned `bronze` extra; optional transport dependencies are isolated in
+`grpc`, `nats`, and `otel`. The raw ASGI WebSocket adapter adds no framework.
+The default install still requires no database server or background service.
+
+~~~bash
+# Only when the corresponding deployment adapter is needed:
+python -m pip install -e ".[grpc,nats,otel]"
+make grpc-generate
+~~~
 
 ## Start here
 
@@ -107,6 +119,6 @@ the pinned `bronze` extra; optional lint and type checking tools are in `dev`.
 The Python core demonstrates the non-negotiable semantics. Production
 adapters should implement the protocols in argo_dt.ports without changing
 domain types. SQLite is the authoritative embedded profile. Neo4j may be added
-later only as a rebuildable graph read model; object storage, NATS JetStream,
-Restate, OPA, Infisical, Wasmtime, OpenTelemetry, and ContextForge remain
-optional adapters around the kernel.
+later only as a rebuildable graph read model. NATS JetStream and OpenTelemetry
+now have optional adapters; object storage, Restate, OPA, Infisical, Wasmtime,
+and ContextForge remain unbound ecosystem ports around the kernel.

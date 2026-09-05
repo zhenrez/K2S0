@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from .errors import IntegrityError, InvariantViolation
 from .ports import EventStore, SnapshotStore
@@ -37,7 +37,7 @@ class TwinState:
     last_event_hash: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return to_primitive(self)
+        return cast(dict[str, Any], to_primitive(self))
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> TwinState:
@@ -248,9 +248,11 @@ class TwinAggregate:
             TwinAggregate.validate_epistemic(payload.get("epistemic"))
         if event.event_type == "EvidenceDeleted" and not payload.get("evidence_id"):
             raise InvariantViolation("EvidenceDeleted requires evidence_id")
-        if event.event_type in TwinAggregate.CLAIM_EVENTS - {"ClaimProposed"}:
-            if not payload.get("claim_id"):
-                raise InvariantViolation(f"{event.event_type} requires claim_id")
+        if (
+            event.event_type in TwinAggregate.CLAIM_EVENTS - {"ClaimProposed"}
+            and not payload.get("claim_id")
+        ):
+            raise InvariantViolation(f"{event.event_type} requires claim_id")
         if event.event_type == "ProjectionIssued":
             required = {"projection_id", "purpose", "recipient_id", "receipt_hash"}
             missing = required.difference(payload)

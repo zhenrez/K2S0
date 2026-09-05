@@ -6,6 +6,7 @@ websocket_queue_capacity = 1024
 max_in_flight_events = 128
 replay_page_events = 256
 heartbeat_seconds = 30
+state_cache_entries = 128
 max_batch_records = 500
 max_record_bytes = 1048576
 max_batch_bytes = 4194304
@@ -24,6 +25,8 @@ require_mtls = true
 policy_bundle = "./policies/rego"
 secret_provider = "injected-key-provider"
 cursor_signing_key_ref = "secret://argo-dt/cursor-hmac"
+cursor_active_key_id = "2026-q3"
+cursor_retiring_key_refs = []
 cursor_max_age_days = 7
 allow_raw_evidence_export = false
 
@@ -33,6 +36,27 @@ stream_transport = "in-process-outbox"
 projection_indexer = "sqlite-fts5"
 graph_read_model = "disabled"
 untrusted_worker_runtime = "disabled"
+
+[adapters.websocket]
+enabled = true
+subprotocol = "argo.dt.state-stream.v1"
+maximum_control_frame_bytes = 16384
+subscribe_timeout_seconds = 10
+client_idle_timeout_seconds = 90
+
+[adapters.grpc]
+enabled = false
+generated_module = "argo.dt.v1"
+
+[adapters.nats]
+enabled = false
+tenant = "local"
+max_deliver = 5
+retry_delay_seconds = 1
+
+[observability]
+opentelemetry_enabled = false
+export_interval_seconds = 15
 
 [retention]
 raw_default_days = 365

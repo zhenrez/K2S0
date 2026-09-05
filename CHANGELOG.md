@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0 — 2026-09-05
+
+- Added an authenticated raw-ASGI WebSocket runtime for the state protocol,
+  including required subprotocol, strict JSON decoding, bounded control frames,
+  negotiated in-flight limits, heartbeat, acknowledgement, and close handling.
+- Added executable gRPC telemetry/state handlers over host-generated protobuf
+  modules, exact serialized-size enforcement, and generated-contract CI.
+- Added per-record JSON telemetry validation with duplicate-key rejection,
+  explicit partial commits, stable idempotent retry, and source metadata.
+- Added optional NATS JetStream publication and manual-ack consumption with
+  bounded redelivery and payload-free dead-letter replay markers.
+- Added bounded cursor-key overlap/rotation and low-cardinality OpenTelemetry
+  delta export without changing the cursor v1 wire shape.
+- Added a sustained SQLite commit-to-stream load harness. Its first run exposed
+  and fixed event-loop starvation in the in-process outbox path.
+- Added a bounded, caller-copy-safe latest-state cache that verifies SQLite
+  sequence/hash before reuse and never caches historical/as-of queries.
+- Made the executable demo emit only the public projection-receipt shape.
+- Enabled repository-wide Ruff and strict-mypy CI gates and cleared the prior
+  lint baseline so new violations fail builds.
+- Kept SQLite as the only authoritative/default database and Neo4j optional.
+
 ## 0.4.0 — 2026-09-05
 
 - Added bounded, hash-verified SQLite replay with a race-safe, duplicate-safe

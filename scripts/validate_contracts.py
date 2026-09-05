@@ -74,6 +74,16 @@ def main() -> None:
     }
     if forbidden_stream_fields.intersection(stream_change["properties"]):
         fail("JSON state-change frame exposes canonical event internals")
+    deadletter = schemas["deadletter-v1.schema.json"]
+    forbidden_deadletter_fields = {
+        "payload",
+        "event_id",
+        "event_hash",
+        "previous_hash",
+        "resume_token",
+    }
+    if forbidden_deadletter_fields.intersection(deadletter["properties"]):
+        fail("dead-letter marker duplicates canonical or resumability material")
 
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
@@ -89,6 +99,11 @@ def main() -> None:
     event_stream = openapi["paths"].get("/v1/twins/{twin_id}/events", {}).get("get")
     if event_stream is None or "x-websocket" not in event_stream:
         fail("OpenAPI is missing the WebSocket state-stream contract")
+    websocket = event_stream["x-websocket"]
+    if websocket.get("subprotocol") != "argo.dt.state-stream.v1":
+        fail("OpenAPI WebSocket subprotocol drifted from the ASGI adapter")
+    if websocket.get("maximumControlFrameBytes") != 16384:
+        fail("OpenAPI WebSocket control-frame limit drifted from the adapter")
     state_change = openapi["components"]["schemas"]["StateChangeFrame"]
     if forbidden_stream_fields.intersection(state_change["properties"]):
         fail("public state-change frames expose canonical event internals")

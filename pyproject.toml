@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argo-dt"
-version = "0.4.0"
+version = "0.5.0"
 description = "K2S0 digital-twin reference kernel and integration contracts"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -20,6 +20,13 @@ Issues = "https://github.com/zhenrez/K2S0/issues"
 dev = ["pytest>=8.3", "ruff>=0.9", "mypy>=1.14"]
 contracts = ["PyYAML==6.0.2"]
 bronze = ["cryptography==46.0.0"]
+grpc = [
+  "grpcio>=1.68,<2",
+  "grpcio-tools>=1.68,<2",
+  "protobuf>=5.29,<7",
+]
+nats = ["nats-py>=2.10,<3"]
+otel = ["opentelemetry-api>=1.29,<2", "opentelemetry-sdk>=1.29,<2"]
 
 [project.scripts]
 argo-dt = "argo_dt.cli:main"
@@ -42,3 +49,12 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.12"
 strict = true
 packages = ["argo_dt"]
+
+[[tool.mypy.overrides]]
+module = [
+  "argo.dt.v1.*",
+  "google.protobuf.*",
+  "grpc",
+  "opentelemetry.*",
+]
+ignore_missing_imports = true

@@ -31,6 +31,13 @@ invariant or record an explicit, reviewed divergence.
 | DT-INV-023 | Acknowledgements cannot regress or exceed the bounded delivery window | synchronization | cumulative ack/backpressure test |
 | DT-INV-024 | External state notifications omit canonical payload, identity, lineage, and hashes | synchronization | frame non-interference and subject-scope test |
 | DT-INV-025 | Telemetry records and batches have explicit byte and count ceilings | synchronization | transport-limit tests |
+| DT-INV-026 | Network streams authenticate and authorize scope before processing | transport | pre-accept/pre-consumption denial tests |
+| DT-INV-027 | Cursor key rollover accepts only a bounded explicit overlap set | security | overlap, rotation, and revocation tests |
+| DT-INV-028 | JetStream derived delivery uses explicit ack and bounded retry | synchronization | ack, retry, and max-deliver tests |
+| DT-INV-029 | Dead-letter markers never duplicate canonical event payloads | privacy | payload-free DLQ marker test |
+| DT-INV-030 | Telemetry export rejects identity and high-cardinality attributes | observability | OTel attribute allow-list test |
+| DT-INV-031 | Every telemetry record reports committed, duplicate, or rejected | transport | partial commit and idempotent retry test |
+| DT-INV-032 | Latest-state cache is bounded, copy-safe, and verified against SQLite head | service | cache isolation, invalidation, and eviction test |
 
 The executable registry is `src/argo_dt/invariants.py`. CI verifies that every
 entry has an owner and points to discoverable executable evidence. The v1

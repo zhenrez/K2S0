@@ -19,7 +19,6 @@ from .types import (
     ProducerRole,
     ProjectionRequest,
     Sensitivity,
-    to_primitive,
 )
 
 
@@ -133,7 +132,7 @@ async def _demo() -> None:
         )
         print(
             json.dumps(
-                {"projection": projection, "receipt": to_primitive(receipt)},
+                {"projection": projection, "receipt": receipt.to_public_dict()},
                 indent=2,
                 sort_keys=True,
             )
