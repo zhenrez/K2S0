@@ -6,9 +6,17 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from .errors import InvariantViolation
-from .ports import EventStore
-from .types import EpistemicVector, EventEnvelope, EventPlane, Sensitivity, parse_time
+from .errors import IntegrityError, InvariantViolation
+from .ports import EventStore, SnapshotStore
+from .types import (
+    EpistemicVector,
+    EventEnvelope,
+    EventPlane,
+    Sensitivity,
+    SnapshotRecord,
+    parse_time,
+    to_primitive,
+)
 
 
 @dataclass(slots=True)
@@ -24,8 +32,79 @@ class TwinState:
     issued_projections: dict[str, dict[str, Any]] = field(default_factory=dict)
     revoked_projection_ids: set[str] = field(default_factory=set)
     stale_claim_ids: set[str] = field(default_factory=set)
+    stale_projection_ids: set[str] = field(default_factory=set)
     degraded_reasons: list[str] = field(default_factory=list)
     last_event_hash: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return to_primitive(self)
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> TwinState:
+        required = {
+            "twin_id",
+            "subject_id",
+            "sequence",
+            "evidence",
+            "claims",
+            "accepted_claim_ids",
+            "contested_claim_ids",
+            "contradictions",
+            "issued_projections",
+            "revoked_projection_ids",
+            "stale_claim_ids",
+            "stale_projection_ids",
+            "degraded_reasons",
+            "last_event_hash",
+        }
+        if set(value) != required:
+            raise InvariantViolation("snapshot state fields do not match TwinState v1")
+        try:
+            state = cls(
+                twin_id=str(value["twin_id"]),
+                subject_id=(
+                    str(value["subject_id"])
+                    if value["subject_id"] is not None
+                    else None
+                ),
+                sequence=int(value["sequence"]),
+                evidence={
+                    str(key): dict(item)
+                    for key, item in dict(value["evidence"]).items()
+                },
+                claims={
+                    str(key): dict(item)
+                    for key, item in dict(value["claims"]).items()
+                },
+                accepted_claim_ids=set(value["accepted_claim_ids"]),
+                contested_claim_ids=set(value["contested_claim_ids"]),
+                contradictions={
+                    str(key): dict(item)
+                    for key, item in dict(value["contradictions"]).items()
+                },
+                issued_projections={
+                    str(key): dict(item)
+                    for key, item in dict(value["issued_projections"]).items()
+                },
+                revoked_projection_ids=set(value["revoked_projection_ids"]),
+                stale_claim_ids=set(value["stale_claim_ids"]),
+                stale_projection_ids=set(value["stale_projection_ids"]),
+                degraded_reasons=[str(item) for item in value["degraded_reasons"]],
+                last_event_hash=str(value["last_event_hash"]),
+            )
+        except (TypeError, ValueError) as exc:
+            raise InvariantViolation("snapshot state has invalid field types") from exc
+        if state.sequence < 1 or not state.twin_id or not state.last_event_hash:
+            raise InvariantViolation("snapshot state has an invalid stream position")
+        return state
+
+    def to_snapshot(self) -> SnapshotRecord:
+        return SnapshotRecord.new(
+            twin_id=self.twin_id,
+            sequence=self.sequence,
+            last_event_hash=self.last_event_hash,
+            state=self.to_dict(),
+        )
 
     def accepted_claims(
         self,
@@ -192,14 +271,25 @@ class TwinAggregate:
 
         if event_type == "EvidenceIngested":
             cls._bind_subject(state, str(payload["subject_id"]))
-            state.evidence[str(payload["evidence_id"])] = payload
+            evidence_id = str(payload["evidence_id"])
+            if evidence_id in state.evidence:
+                raise InvariantViolation(
+                    "evidence identity already exists; append a correction event"
+                )
+            state.evidence[evidence_id] = payload
         elif event_type == "EvidenceDeleted":
             evidence_id = str(payload["evidence_id"])
-            state.evidence.pop(evidence_id, None)
+            if evidence_id not in state.evidence:
+                raise InvariantViolation("cannot delete unknown evidence")
+            state.evidence.pop(evidence_id)
             for claim_id, claim in state.claims.items():
                 refs = claim.get("provenance", [])
                 if any(ref.get("evidence_id") == evidence_id for ref in refs):
                     state.stale_claim_ids.add(claim_id)
+            for projection_id, projection in state.issued_projections.items():
+                source_claim_ids = set(projection.get("source_claim_ids", []))
+                if source_claim_ids.intersection(state.stale_claim_ids):
+                    state.stale_projection_ids.add(projection_id)
         elif event_type == "ClaimProposed":
             cls._bind_subject(state, str(payload["subject_id"]))
             for ref in payload["provenance"]:
@@ -212,6 +302,10 @@ class TwinAggregate:
                         "claim provenance independence group does not match evidence"
                     )
             claim_id = str(payload["claim_id"])
+            if claim_id in state.claims:
+                raise InvariantViolation(
+                    "claim identity already exists; append a supersession event"
+                )
             claim = dict(payload)
             claim["recorded_at"] = event.recorded_at.isoformat()
             state.claims[claim_id] = claim
@@ -242,6 +336,8 @@ class TwinAggregate:
             state.accepted_claim_ids.discard(claim_id)
         elif event_type == "ContradictionDetected":
             contradiction_id = str(payload["contradiction_id"])
+            if contradiction_id in state.contradictions:
+                raise InvariantViolation("contradiction identity already exists")
             state.contradictions[contradiction_id] = payload
         elif event_type == "ProjectionRevoked":
             projection_id = str(payload["projection_id"])
@@ -252,6 +348,8 @@ class TwinAggregate:
             if state.subject_id is None:
                 raise InvariantViolation("cannot issue a projection for an unbound twin")
             projection_id = str(payload["projection_id"])
+            if projection_id in state.issued_projections:
+                raise InvariantViolation("projection identity already exists")
             state.issued_projections[projection_id] = payload
         elif event_type == "DegradationDeclared":
             state.degraded_reasons.append(str(payload["reason"]))
@@ -268,17 +366,44 @@ class TwinAggregate:
         store: EventStore,
         twin_id: str,
         *,
+        snapshot_store: SnapshotStore | None = None,
         up_to_sequence: int | None = None,
         as_of_recorded_time: datetime | None = None,
     ) -> TwinState:
         state = TwinState(twin_id=twin_id)
+        after_sequence = 0
+        previous_hash = ""
+        if snapshot_store is not None and as_of_recorded_time is None:
+            snapshot = snapshot_store.load_snapshot(
+                twin_id,
+                up_to_sequence=up_to_sequence,
+            )
+            if snapshot is not None:
+                snapshot.verify()
+                state = TwinState.from_dict(dict(snapshot.state))
+                if (
+                    state.twin_id != snapshot.twin_id
+                    or state.sequence != snapshot.sequence
+                    or state.last_event_hash != snapshot.last_event_hash
+                ):
+                    raise InvariantViolation("snapshot state does not match its stream link")
+                after_sequence = snapshot.sequence
+                previous_hash = snapshot.last_event_hash
         events = store.load(
             twin_id,
+            after_sequence=after_sequence,
             up_to_sequence=up_to_sequence,
             planes=frozenset({EventPlane.AUTHORITATIVE, EventPlane.PROJECTION}),
         )
         for event in events:
             if as_of_recorded_time is not None and event.recorded_at > as_of_recorded_time:
                 break
+            expected_sequence = state.sequence + 1
+            if event.sequence != expected_sequence:
+                raise IntegrityError(
+                    f"replay sequence gap: expected {expected_sequence}, found {event.sequence}"
+                )
+            event.verify(previous_hash)
             cls.apply(state, event)
+            previous_hash = event.event_hash
         return state

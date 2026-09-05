@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
+import uuid
+from dataclasses import dataclass
 from typing import AsyncIterator
 
-from .errors import BackpressureExceeded
+from .errors import BackpressureExceeded, IntegrityError
+from .ports import OutboxStore, TelemetryPublisher
 from .types import EventEnvelope
 
 _CLOSED = object()
@@ -53,6 +55,51 @@ class BrokerStats:
     published: int = 0
     delivered: int = 0
     disconnected_slow_consumers: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class RelayBatch:
+    claimed: int
+    published: int
+    failed: int
+
+
+class OutboxRelay:
+    """At-least-once relay; consumers deduplicate by twin ID and sequence."""
+
+    def __init__(
+        self,
+        *,
+        store: OutboxStore,
+        publisher: TelemetryPublisher,
+        lease_owner: str | None = None,
+        lease_seconds: int = 30,
+    ) -> None:
+        self.store = store
+        self.publisher = publisher
+        self.lease_owner = lease_owner or f"relay-{uuid.uuid4()}"
+        self.lease_seconds = lease_seconds
+
+    async def drain(self, *, limit: int = 100) -> RelayBatch:
+        records = self.store.claim_outbox(
+            lease_owner=self.lease_owner,
+            limit=limit,
+            lease_seconds=self.lease_seconds,
+        )
+        published = 0
+        failed = 0
+        for record in records:
+            try:
+                await self.publisher.publish(record.event)
+            except Exception as exc:  # publisher boundaries are intentionally isolated
+                if not self.store.release_outbox(record, error=type(exc).__name__):
+                    raise IntegrityError("failed publication lost its outbox lease") from exc
+                failed += 1
+                continue
+            if not self.store.mark_outbox_published(record):
+                raise IntegrityError("published event lost its outbox lease")
+            published += 1
+        return RelayBatch(len(records), published, failed)
 
 
 class BoundedEventBroker:

@@ -8,8 +8,8 @@ invariant or record an explicit, reviewed divergence.
 | --- | --- | --- | --- |
 | DT-INV-001 | Human, cognitive-twin, service-agent, and avatar identities remain distinct | identity | identity-surface test |
 | DT-INV-002 | One twin binds exactly one subject | aggregate | cross-subject isolation test |
-| DT-INV-003 | Each twin stream is contiguous and hash chained | event store | chain and golden replay tests |
-| DT-INV-004 | An idempotent retry returns the original append and is not republished | event store | store and broker retry tests |
+| DT-INV-003 | Each twin stream is contiguous and hash chained; snapshots bind to it | event store | chain, replay, and snapshot-integrity tests |
+| DT-INV-004 | Event and outbox commit atomically; retries do not duplicate either | event store | rollback and relay retry tests |
 | DT-INV-005 | Valid time and recorded time remain independent | aggregate | bitemporal time-travel tests |
 | DT-INV-006 | Every claim has resolvable evidence provenance | adjudication | unknown-provenance rejection test |
 | DT-INV-007 | Every claim has seven independently bounded epistemic dimensions | adjudication | epistemic completeness test |
@@ -20,10 +20,10 @@ invariant or record an explicit, reviewed divergence.
 | DT-INV-012 | Consent to information never grants authority to act | policy | ActionEnvelope separation test |
 | DT-INV-013 | Only the registered producer role may create each event type | authorization | ownership matrix tests |
 | DT-INV-014 | Invalid transitions are rejected before persistence | service | replay-poisoning prevention test |
-| DT-INV-015 | Evidence deletion invalidates dependent claims and artifacts | aggregate | deletion dependency test |
+| DT-INV-015 | Evidence deletion queues transitive claim/projection invalidation | aggregate + dependency index | replay and queue tests |
 | DT-INV-016 | Projection issuance and revocation remain auditable | projection | revocation state tests |
 | DT-INV-017 | Real-time subscribers cannot create unbounded buffering | synchronization | slow-consumer test |
-| DT-INV-018 | Loss reports do not reveal hidden identifiers | projection | non-interference assertion |
+| DT-INV-018 | Projection payloads and loss reports omit internal lineage identifiers | projection | non-interference assertion |
 | DT-INV-019 | Persisted producer identity matches the authenticated actor | authorization | spoofed-producer test |
 | DT-INV-020 | Canonical hashes are stable across unordered collection iteration | contracts | deterministic serialization test |
 

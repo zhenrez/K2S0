@@ -45,7 +45,7 @@ paths:
             schema: { $ref: "#/components/schemas/ProjectionRequest" }
       responses:
         "201":
-          description: Purpose-bound projection and private receipt
+          description: Purpose-bound projection and disclosure-safe receipt
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProjectionResponse" }

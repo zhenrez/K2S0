@@ -12,7 +12,8 @@ provides:
 - an executable, dependency-light reference kernel;
 - canonical ARGOCell, event, consent, action, and projection contracts;
 - append-only, hash-chained event storage with idempotency and optimistic
-  concurrency;
+  concurrency, hash-verified snapshots, and a transactional outbox;
+- an AES-256-GCM Bronze vault and durable transitive deletion invalidation;
 - bitemporal state, isolated simulation branches, default-deny projection
   compilation, and real-time bounded fan-out;
 - gRPC, REST, WebSocket, JSON Schema, SQL, and Rego integration contracts;
@@ -69,12 +70,13 @@ flowchart TB
 | Time | Valid time + recorded/system time on every authoritative cell/event |
 | Identity | Human principal, cognitive twin, agent identity, and avatar identity stay distinct |
 | Synchronization | Ordered per-twin stream, idempotency key, expected-sequence CAS, resumable cursor |
+| Persistence | SQLite/WAL authoritative store; recursive dependency tables; optional Neo4j read model only |
 | Real-time path | gRPC bidi ingestion; NATS JetStream in production; bounded WebSocket egress |
 | Durable work | Restate primary; Temporal is a supported alternative, not a second mandatory runtime |
 | Simulation | Forked namespace and event plane; no automatic promotion into evidence |
 | Disclosure | Purpose- and recipient-bound compilation before retrieval; default deny |
 | Execution | K2S0 informs actions but does not execute them; ActionEnvelope is checked downstream |
-| Hot path | Rust production target; Python package is the executable semantic reference |
+| Hot path | Embedded Python/SQLite profile first; add native acceleration only after measurement |
 
 ## Quick verification
 
@@ -83,8 +85,8 @@ make test
 make demo
 ~~~
 
-The test suite uses only Python's standard library. Optional lint and type
-checking tools are listed under the dev extra.
+The kernel uses Python's standard library. The encrypted Bronze adapter uses
+the pinned `bronze` extra; optional lint and type checking tools are in `dev`.
 
 ## Start here
 
@@ -103,6 +105,7 @@ checking tools are listed under the dev extra.
 
 The Python core demonstrates the non-negotiable semantics. Production
 adapters should implement the protocols in argo_dt.ports without changing
-domain types. PostgreSQL, object storage, NATS JetStream, Restate, OPA,
-Infisical, Wasmtime, OpenTelemetry, and ContextForge remain adapters around
-the kernel.
+domain types. SQLite is the authoritative embedded profile. Neo4j may be added
+later only as a rebuildable graph read model; object storage, NATS JetStream,
+Restate, OPA, Infisical, Wasmtime, OpenTelemetry, and ContextForge remain
+optional adapters around the kernel.

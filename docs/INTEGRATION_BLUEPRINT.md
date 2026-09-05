@@ -18,10 +18,10 @@ The package defines ports in **src/argo_dt/ports.py**. Production adapters:
 
 | Port | Default adapter | Alternatives |
 | --- | --- | --- |
-| EventStore | PostgreSQL + transactional outbox | Restate state; SQLite edge |
+| EventStore | SQLite/WAL + transactional outbox | sharded SQLite files; Restate state |
 | BronzeVault | S3-compatible object store with envelope encryption | local encrypted filesystem |
 | TelemetryPublisher | NATS JetStream | Kafka/Redpanda |
-| ConsentStore | PostgreSQL with RLS | external policy registry |
+| ConsentStore | SQLite in the same tenant boundary | external policy registry |
 | PolicyEvaluator | OPA/Rego sidecar or embedded WASM | Cedar/custom deterministic engine |
 | ModelWorker | Portkey-routed provider or local model | any versioned worker |
 | Connector | HPI-style provider module | Screenpipe, message/export adapters |
@@ -163,6 +163,12 @@ partial implicit grants; the caller must request a known surface.
 Stores consent and policy versions, source sequence, disclosed fields, private
 source claim references, artifact hash, issue/expiry time, and revocation.
 The external recipient need not receive private claim IDs.
+
+Disclosed claim payloads use an explicit allowlist: statement, kind, validity
+interval, and epistemic vector. Claim IDs, subject IDs, provenance/evidence
+IDs, model traces, recorded time, review state, and source sensitivity remain
+inside the authoritative boundary. The public artifact hash covers only the
+disclosed form.
 
 ### ActionEnvelope
 

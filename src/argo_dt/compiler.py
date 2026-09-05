@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Mapping
 
 from .aggregate import TwinState
 from .errors import InvariantViolation, PolicyDenied
@@ -44,6 +44,16 @@ _CLAIM_KIND_TO_ARTIFACT = {
     "boundary": "boundaries",
     "event": "history",
 }
+
+_DISCLOSED_CLAIM_FIELDS = frozenset(
+    {
+        "statement",
+        "kind",
+        "valid_from",
+        "valid_until",
+        "epistemic",
+    }
+)
 
 
 class KernelCompiler:
@@ -155,6 +165,23 @@ class ProjectionCompiler:
         self._policy = policy
         self._kernel = kernel_compiler or KernelCompiler()
 
+    @staticmethod
+    def _disclosed_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+        claims = payload.get("claims")
+        if not isinstance(claims, list):
+            return dict(payload)
+        return {
+            "claims": [
+                {
+                    key: value
+                    for key, value in claim.items()
+                    if key in _DISCLOSED_CLAIM_FIELDS
+                }
+                for claim in claims
+                if isinstance(claim, dict)
+            ]
+        }
+
     def compile(
         self,
         *,
@@ -184,15 +211,26 @@ class ProjectionCompiler:
                 known_at=request.as_of_recorded_time,
                 max_sensitivity=request.maximum_sensitivity,
             )
+            disclosed_payload = self._disclosed_payload(artifact.payload)
+            disclosed_loss_report = {
+                "degraded": bool(artifact.loss_report["degraded_reasons"]),
+            }
+            disclosed_hash = content_hash(
+                {
+                    "artifact_type": field_name,
+                    "status": artifact.status,
+                    "source_sequence": artifact.source_sequence,
+                    "payload": disclosed_payload,
+                    "loss_report": disclosed_loss_report,
+                }
+            )
             artifacts[field_name] = {
                 "artifact_id": artifact.artifact_id,
                 "status": artifact.status,
                 "source_sequence": artifact.source_sequence,
-                "payload": artifact.payload,
-                "loss_report": {
-                    "degraded": bool(artifact.loss_report["degraded_reasons"]),
-                },
-                "artifact_hash": artifact.artifact_hash,
+                "payload": disclosed_payload,
+                "loss_report": disclosed_loss_report,
+                "artifact_hash": disclosed_hash,
             }
             source_claim_ids.update(artifact.source_claim_ids)
 
