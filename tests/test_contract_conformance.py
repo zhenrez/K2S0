@@ -11,7 +11,7 @@ from argo_dt.compiler import ProjectionCompiler
 from argo_dt.conformance import load_golden_replay, replay_events
 from argo_dt.errors import InvariantViolation
 from argo_dt.event_store import SQLiteEventStore
-from argo_dt.invariants import INVARIANTS, INVARIANT_BY_ID
+from argo_dt.invariants import INVARIANT_BY_ID, INVARIANTS
 from argo_dt.policy import DefaultDenyPolicy
 from argo_dt.service import DigitalTwinService
 from argo_dt.types import (
@@ -26,7 +26,6 @@ from argo_dt.types import (
     content_hash,
     parse_time,
 )
-
 
 ROOT = Path(__file__).resolve().parents[1]
 

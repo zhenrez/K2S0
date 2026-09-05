@@ -5,8 +5,9 @@ from __future__ import annotations
 import copy
 import uuid
 from collections import OrderedDict
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .aggregate import TwinAggregate, TwinState
 from .compiler import ProjectionCompiler

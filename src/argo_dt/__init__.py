@@ -26,18 +26,18 @@ from .sync import (
     TelemetryStreamAck,
 )
 from .types import (
-    ARGOCell,
-    ActorContext,
     ActionEnvelope,
+    ActorContext,
+    ARGOCell,
     BitemporalInterval,
     ConsentGrant,
     EpistemicVector,
     EventEnvelope,
     EventPlane,
     IdentityKind,
-    ProjectionRequest,
-    ProjectionReceipt,
     ProducerRole,
+    ProjectionReceipt,
+    ProjectionRequest,
     Sensitivity,
     SnapshotRecord,
 )

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from datetime import datetime, timedelta
-from typing import Any, Mapping
+from typing import Any
 
 from .aggregate import TwinState
 from .errors import InvariantViolation, PolicyDenied
@@ -91,9 +92,12 @@ class KernelCompiler:
                     end = parse_time(end_raw) if end_raw else None
                     if valid_at < start or (end is not None and valid_at >= end):
                         return False
-                if known_at is not None and claim.get("recorded_at"):
-                    if parse_time(claim["recorded_at"]) > known_at:
-                        return False
+                if (
+                    known_at is not None
+                    and claim.get("recorded_at")
+                    and parse_time(claim["recorded_at"]) > known_at
+                ):
+                    return False
                 return True
 
             selected = [

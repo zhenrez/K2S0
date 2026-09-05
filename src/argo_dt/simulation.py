@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
 from .aggregate import TwinState
 from .errors import InvariantViolation

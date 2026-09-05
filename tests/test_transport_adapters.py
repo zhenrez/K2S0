@@ -4,9 +4,10 @@ import asyncio
 import hashlib
 import json
 import unittest
+from collections.abc import AsyncIterator, Mapping
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, Mapping
+from typing import Any
 
 from argo_dt.adapters.auth import (
     AuthenticatedPrincipal,

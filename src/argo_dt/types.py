@@ -10,10 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from .errors import IntegrityError, InvariantViolation
 

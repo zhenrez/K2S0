@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Mapping, Protocol
+from typing import Any, Protocol
 
 from ..conformance import event_from_primitive
 from ..errors import IntegrityError, MessageTooLarge, ProtocolViolation

@@ -7,9 +7,10 @@ returns the already-bound ActorContext plus explicit OAuth scopes.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Mapping, Protocol
+from typing import Protocol
 
 from ..errors import AuthorizationDenied
 from ..types import ActorContext

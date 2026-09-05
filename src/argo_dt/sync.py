@@ -17,11 +17,11 @@ import re
 import secrets
 import uuid
 from collections import deque
-from collections.abc import Collection, Sequence
+from collections.abc import AsyncIterator, Callable, Collection, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import AsyncIterator, Callable, Protocol
+from typing import Protocol
 
 from .errors import (
     BackpressureExceeded,

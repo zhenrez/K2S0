@@ -7,10 +7,11 @@ import hashlib
 import json
 import os
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Mapping, Protocol
+from typing import Any, Protocol
 
 from .errors import IntegrityError, InvariantViolation, NotFound
 from .types import BronzeObject, Sensitivity, canonical_json, parse_time, utc_now
@@ -258,7 +259,7 @@ class EncryptedFileBronzeVault:
                 ):
                     raise InvariantViolation(
                         "concurrent Bronze source identity changed acquisition material"
-                    )
+                    ) from None
             self._fsync_directory(path.parent)
         finally:
             temporary.unlink(missing_ok=True)

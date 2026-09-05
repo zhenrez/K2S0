@@ -18,6 +18,8 @@
 - Added a bounded, caller-copy-safe latest-state cache that verifies SQLite
   sequence/hash before reuse and never caches historical/as-of queries.
 - Made the executable demo emit only the public projection-receipt shape.
+- Enabled repository-wide Ruff and strict-mypy CI gates and cleared the prior
+  lint baseline so new violations fail builds.
 - Kept SQLite as the only authoritative/default database and Neo4j optional.
 
 ## 0.4.0 — 2026-09-05

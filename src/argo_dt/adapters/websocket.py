@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Awaitable, Callable, Mapping
+from typing import Any
 from urllib.parse import unquote
 
 from ..errors import (
@@ -222,7 +223,7 @@ class StateWebSocketApp:
             raise ValueError("StateWebSocketApp accepts only ASGI WebSocket scopes")
         try:
             connect = await asyncio.wait_for(receive(), timeout=self._subscribe_timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await send(
                 {"type": "websocket.close", "code": 4410, "reason": "connect timeout"}
             )
@@ -287,7 +288,7 @@ class StateWebSocketApp:
                 max_in_flight=control.max_in_flight,
             )
             await self._serve(session, receive, send)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await self._fail(session, send, code=4410, reason="stream timeout")
         except AuthorizationDenied:
             await self._fail(session, send, code=4403, reason="access denied")

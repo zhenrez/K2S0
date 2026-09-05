@@ -250,9 +250,10 @@ class TelemetryBatchProcessor:
             raise InvariantViolation("INVALID_INDEPENDENCE_GROUP")
         if record.valid_from.tzinfo is None:
             raise InvariantViolation("INVALID_VALID_FROM")
-        if record.valid_until is not None:
-            if record.valid_until.tzinfo is None or record.valid_until < record.valid_from:
-                raise InvariantViolation("INVALID_VALID_UNTIL")
+        if record.valid_until is not None and (
+            record.valid_until.tzinfo is None or record.valid_until < record.valid_from
+        ):
+            raise InvariantViolation("INVALID_VALID_UNTIL")
         try:
             Sensitivity(record.sensitivity)
         except ValueError as exc:

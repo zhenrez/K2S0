@@ -129,5 +129,5 @@ class OpenTelemetrySyncExporter:
             self.export()
             try:
                 await asyncio.wait_for(stop.wait(), timeout=interval_seconds)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue

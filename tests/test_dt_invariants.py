@@ -19,9 +19,9 @@ from argo_dt.policy import DefaultDenyPolicy
 from argo_dt.service import DigitalTwinService
 from argo_dt.sync import BoundedEventBroker
 from argo_dt.types import (
-    ARGOCell,
     ActionEnvelope,
     ActorContext,
+    ARGOCell,
     AuthorityGrant,
     BitemporalInterval,
     ConsentGrant,
