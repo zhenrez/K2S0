@@ -38,6 +38,14 @@ invariant or record an explicit, reviewed divergence.
 | DT-INV-030 | Telemetry export rejects identity and high-cardinality attributes | observability | OTel attribute allow-list test |
 | DT-INV-031 | Every telemetry record reports committed, duplicate, or rejected | transport | partial commit and idempotent retry test |
 | DT-INV-032 | Latest-state cache is bounded, copy-safe, and verified against SQLite head | service | cache isolation, invalidation, and eviction test |
+| DT-INV-033 | Every derived epistemic node supports reversible ancestry and impact traversal | lineage index | multi-hop trace test |
+| DT-INV-034 | Contradiction detection and human adjudication remain separate events | adjudication | competing-claim workflow test |
+| DT-INV-035 | Corrections preserve their target and name an existing replacement | human review | append-only correction test |
+| DT-INV-036 | Valid-time selection never changes the recorded stream position | aggregate | valid-time interval test |
+| DT-INV-037 | ARGOCell relations type Point, Line, Face, Volume, and Root explicitly | contracts | topology serialization test |
+| DT-INV-038 | Elicitation answers enter encrypted Bronze and not ledger payloads | elicitation | Bronze non-disclosure test |
+| DT-INV-039 | Entity links require resolvable evidence provenance | identity | identity-lineage trace test |
+| DT-INV-040 | Elicitation responses require a plan exactly derivable from its recorded source state | elicitation | forged-plan rejection tests |
 
 The executable registry is `src/argo_dt/invariants.py`. CI verifies that every
 entry has an owner and points to discoverable executable evidence. The v1

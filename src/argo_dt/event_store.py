@@ -85,16 +85,28 @@ CREATE TABLE IF NOT EXISTS dt_dependencies (
     dependent_kind TEXT NOT NULL,
     dependent_id TEXT NOT NULL,
     created_sequence INTEGER NOT NULL,
+    relation TEXT NOT NULL,
     PRIMARY KEY (
-        twin_id, source_kind, source_id, dependent_kind, dependent_id
+        twin_id, source_kind, source_id, dependent_kind, dependent_id, relation
     ),
     FOREIGN KEY (twin_id, created_sequence)
         REFERENCES dt_events(twin_id, sequence),
-    CHECK (source_kind IN ('evidence', 'claim')),
-    CHECK (dependent_kind IN ('claim', 'projection'))
+    CHECK (
+        source_kind IN (
+            'evidence', 'entity', 'claim', 'contradiction', 'correction', 'projection'
+        )
+    ),
+    CHECK (
+        dependent_kind IN (
+            'evidence', 'entity', 'claim', 'contradiction', 'correction', 'projection'
+        )
+    )
 );
 CREATE INDEX IF NOT EXISTS dt_dependencies_source_idx
-    ON dt_dependencies (twin_id, source_kind, source_id);
+    ON dt_dependencies (
+        twin_id, source_kind, source_id, created_sequence,
+        dependent_kind, dependent_id
+    );
 
 CREATE TABLE IF NOT EXISTS dt_invalidation_queue (
     twin_id TEXT NOT NULL,
@@ -120,6 +132,14 @@ CREATE TABLE IF NOT EXISTS dt_adapter_metadata (
 """
 
 _EVENT_TOPIC = "dt.events"
+_LINEAGE_KINDS = {
+    "evidence",
+    "entity",
+    "claim",
+    "contradiction",
+    "correction",
+    "projection",
+}
 
 
 class SQLiteEventStore:
@@ -199,15 +219,71 @@ class SQLiteEventStore:
         marker = self._connection.execute(
             "SELECT value FROM dt_adapter_metadata WHERE key = 'dependency_index'"
         ).fetchone()
-        if marker is not None and str(marker["value"]) == "v1":
+        if marker is not None and str(marker["value"]) == "v2":
             return
         cursor = self._connection.cursor()
         try:
             cursor.execute("BEGIN IMMEDIATE")
+            cursor.execute("DROP TABLE IF EXISTS dt_dependencies_v2")
+            cursor.execute(
+                """
+                CREATE TABLE dt_dependencies_v2 (
+                    twin_id TEXT NOT NULL,
+                    source_kind TEXT NOT NULL,
+                    source_id TEXT NOT NULL,
+                    dependent_kind TEXT NOT NULL,
+                    dependent_id TEXT NOT NULL,
+                    created_sequence INTEGER NOT NULL,
+                    relation TEXT NOT NULL,
+                    PRIMARY KEY (
+                        twin_id, source_kind, source_id, dependent_kind,
+                        dependent_id, relation
+                    ),
+                    FOREIGN KEY (twin_id, created_sequence)
+                        REFERENCES dt_events(twin_id, sequence),
+                    CHECK (
+                        source_kind IN (
+                            'evidence', 'entity', 'claim', 'contradiction',
+                            'correction', 'projection'
+                        )
+                    ),
+                    CHECK (
+                        dependent_kind IN (
+                            'evidence', 'entity', 'claim', 'contradiction',
+                            'correction', 'projection'
+                        )
+                    )
+                )
+                """
+            )
+            cursor.execute("DROP TABLE dt_dependencies")
+            cursor.execute("ALTER TABLE dt_dependencies_v2 RENAME TO dt_dependencies")
+            cursor.execute(
+                """
+                CREATE INDEX dt_dependencies_source_idx
+                    ON dt_dependencies (
+                        twin_id, source_kind, source_id, created_sequence,
+                        dependent_kind, dependent_id
+                    )
+                """
+            )
+            cursor.execute(
+                """
+                CREATE INDEX dt_dependencies_dependent_idx
+                    ON dt_dependencies (
+                        twin_id, dependent_kind, dependent_id, created_sequence,
+                        source_kind, source_id
+                    )
+                """
+            )
             events = cursor.execute(
                 """
                 SELECT * FROM dt_events
-                WHERE event_type IN ('ClaimProposed', 'ProjectionIssued', 'EvidenceDeleted')
+                WHERE event_type IN (
+                    'EntityLinked', 'ClaimProposed', 'ClaimSuperseded',
+                    'ContradictionDetected', 'CorrectionRecorded',
+                    'ProjectionIssued', 'EvidenceDeleted'
+                )
                 ORDER BY twin_id, sequence
                 """
             ).fetchall()
@@ -216,7 +292,7 @@ class SQLiteEventStore:
             cursor.execute(
                 """
                 INSERT INTO dt_adapter_metadata (key, value)
-                VALUES ('dependency_index', 'v1')
+                VALUES ('dependency_index', 'v2')
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value
                 """
             )
@@ -282,36 +358,103 @@ class SQLiteEventStore:
 
     @staticmethod
     def _index_dependencies(cursor: sqlite3.Cursor, event: EventEnvelope) -> None:
+        def add_edge(
+            source_kind: str,
+            source_id: str,
+            dependent_kind: str,
+            dependent_id: str,
+            relation: str,
+        ) -> None:
+            if not source_id or not dependent_id:
+                return
+            cursor.execute(
+                """
+                INSERT OR IGNORE INTO dt_dependencies (
+                    twin_id, source_kind, source_id, dependent_kind,
+                    dependent_id, created_sequence, relation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.twin_id,
+                    source_kind,
+                    source_id,
+                    dependent_kind,
+                    dependent_id,
+                    event.sequence,
+                    relation,
+                ),
+            )
+
         if event.event_type == "ClaimProposed":
             claim_id = str(event.payload.get("claim_id", ""))
             for reference in event.payload.get("provenance", []):
                 if not isinstance(reference, dict):
                     continue
-                evidence_id = str(reference.get("evidence_id", ""))
-                if claim_id and evidence_id:
-                    cursor.execute(
-                        """
-                        INSERT OR IGNORE INTO dt_dependencies (
-                            twin_id, source_kind, source_id, dependent_kind,
-                            dependent_id, created_sequence
-                        ) VALUES (?, 'evidence', ?, 'claim', ?, ?)
-                        """,
-                        (event.twin_id, evidence_id, claim_id, event.sequence),
-                    )
+                add_edge(
+                    "evidence",
+                    str(reference.get("evidence_id", "")),
+                    "claim",
+                    claim_id,
+                    str(reference.get("relation", "supports")),
+                )
+        elif event.event_type == "EntityLinked":
+            link_id = str(event.payload.get("entity_link_id", ""))
+            for reference in event.payload.get("provenance", []):
+                if not isinstance(reference, dict):
+                    continue
+                add_edge(
+                    "evidence",
+                    str(reference.get("evidence_id", "")),
+                    "entity",
+                    link_id,
+                    str(reference.get("relation", "identifies")),
+                )
+        elif event.event_type == "ClaimSuperseded":
+            add_edge(
+                "claim",
+                str(event.payload.get("claim_id", "")),
+                "claim",
+                str(event.payload.get("successor_claim_id", "")),
+                "superseded_by",
+            )
+        elif event.event_type == "ContradictionDetected":
+            contradiction_id = str(event.payload.get("contradiction_id", ""))
+            for claim_id in event.payload.get("claim_ids", []):
+                add_edge(
+                    "claim",
+                    str(claim_id),
+                    "contradiction",
+                    contradiction_id,
+                    "contradicts",
+                )
+        elif event.event_type == "CorrectionRecorded":
+            correction_id = str(event.payload.get("correction_id", ""))
+            target_kind = str(event.payload.get("target_kind", ""))
+            if target_kind in {"evidence", "claim"}:
+                add_edge(
+                    target_kind,
+                    str(event.payload.get("target_id", "")),
+                    "correction",
+                    correction_id,
+                    "corrected",
+                )
+                add_edge(
+                    target_kind,
+                    str(event.payload.get("replacement_id", "")),
+                    "correction",
+                    correction_id,
+                    "replacement",
+                )
         elif event.event_type == "ProjectionIssued":
             projection_id = str(event.payload.get("projection_id", ""))
             for claim_id_value in event.payload.get("source_claim_ids", []):
-                claim_id = str(claim_id_value)
-                if projection_id and claim_id:
-                    cursor.execute(
-                        """
-                        INSERT OR IGNORE INTO dt_dependencies (
-                            twin_id, source_kind, source_id, dependent_kind,
-                            dependent_id, created_sequence
-                        ) VALUES (?, 'claim', ?, 'projection', ?, ?)
-                        """,
-                        (event.twin_id, claim_id, projection_id, event.sequence),
-                    )
+                add_edge(
+                    "claim",
+                    str(claim_id_value),
+                    "projection",
+                    projection_id,
+                    "compiled_from",
+                )
         elif event.event_type == "EvidenceDeleted":
             evidence_id = str(event.payload.get("evidence_id", ""))
             if not evidence_id:
@@ -324,11 +467,12 @@ class SQLiteEventStore:
                     WHERE twin_id = ? AND source_kind = 'evidence' AND source_id = ?
                     UNION
                     SELECT dependency.dependent_kind, dependency.dependent_id
-                    FROM dt_dependencies AS dependency
-                    JOIN impacted
-                      ON dependency.source_kind = impacted.kind
+                    FROM impacted
+                    CROSS JOIN dt_dependencies AS dependency
+                        INDEXED BY dt_dependencies_source_idx
+                      ON dependency.twin_id = ?
+                     AND dependency.source_kind = impacted.kind
                      AND dependency.source_id = impacted.identifier
-                    WHERE dependency.twin_id = ?
                 )
                 SELECT kind, identifier FROM impacted ORDER BY kind, identifier
                 """,
@@ -784,9 +928,13 @@ class SQLiteEventStore:
         source_id: str,
         *,
         transitive: bool = True,
+        up_to_sequence: int | None = None,
     ) -> tuple[tuple[str, str], ...]:
-        if source_kind not in {"evidence", "claim"}:
-            raise ValueError("source_kind must be evidence or claim")
+        if source_kind not in _LINEAGE_KINDS:
+            raise ValueError("source_kind is not a supported lineage kind")
+        cutoff = up_to_sequence if up_to_sequence is not None else 2**63 - 1
+        if cutoff < 0:
+            return ()
         with self._lock:
             if transitive:
                 rows = self._connection.execute(
@@ -795,17 +943,20 @@ class SQLiteEventStore:
                         SELECT dependent_kind, dependent_id
                         FROM dt_dependencies
                         WHERE twin_id = ? AND source_kind = ? AND source_id = ?
+                          AND created_sequence <= ?
                         UNION
                         SELECT dependency.dependent_kind, dependency.dependent_id
-                        FROM dt_dependencies AS dependency
-                        JOIN impacted
-                          ON dependency.source_kind = impacted.kind
+                        FROM impacted
+                        CROSS JOIN dt_dependencies AS dependency
+                            INDEXED BY dt_dependencies_source_idx
+                          ON dependency.twin_id = ?
+                         AND dependency.source_kind = impacted.kind
                          AND dependency.source_id = impacted.identifier
-                        WHERE dependency.twin_id = ?
+                        WHERE dependency.created_sequence <= ?
                     )
                     SELECT kind, identifier FROM impacted ORDER BY kind, identifier
                     """,
-                    (twin_id, source_kind, source_id, twin_id),
+                    (twin_id, source_kind, source_id, cutoff, twin_id, cutoff),
                 ).fetchall()
             else:
                 rows = self._connection.execute(
@@ -813,9 +964,69 @@ class SQLiteEventStore:
                     SELECT dependent_kind AS kind, dependent_id AS identifier
                     FROM dt_dependencies
                     WHERE twin_id = ? AND source_kind = ? AND source_id = ?
+                      AND created_sequence <= ?
                     ORDER BY dependent_kind, dependent_id
                     """,
-                    (twin_id, source_kind, source_id),
+                    (twin_id, source_kind, source_id, cutoff),
+                ).fetchall()
+        return tuple((str(row["kind"]), str(row["identifier"])) for row in rows)
+
+    def ancestors(
+        self,
+        twin_id: str,
+        dependent_kind: str,
+        dependent_id: str,
+        *,
+        transitive: bool = True,
+        up_to_sequence: int | None = None,
+    ) -> tuple[tuple[str, str], ...]:
+        if dependent_kind not in _LINEAGE_KINDS:
+            raise ValueError("dependent_kind is not a supported lineage kind")
+        cutoff = up_to_sequence if up_to_sequence is not None else 2**63 - 1
+        if cutoff < 0:
+            return ()
+        with self._lock:
+            if transitive:
+                rows = self._connection.execute(
+                    """
+                    WITH RECURSIVE ancestry(kind, identifier) AS (
+                        SELECT source_kind, source_id
+                        FROM dt_dependencies
+                        WHERE twin_id = ?
+                          AND dependent_kind = ? AND dependent_id = ?
+                          AND created_sequence <= ?
+                        UNION
+                        SELECT dependency.source_kind, dependency.source_id
+                        FROM ancestry
+                        CROSS JOIN dt_dependencies AS dependency
+                            INDEXED BY dt_dependencies_dependent_idx
+                          ON dependency.twin_id = ?
+                         AND dependency.dependent_kind = ancestry.kind
+                         AND dependency.dependent_id = ancestry.identifier
+                        WHERE dependency.created_sequence <= ?
+                    )
+                    SELECT kind, identifier FROM ancestry ORDER BY kind, identifier
+                    """,
+                    (
+                        twin_id,
+                        dependent_kind,
+                        dependent_id,
+                        cutoff,
+                        twin_id,
+                        cutoff,
+                    ),
+                ).fetchall()
+            else:
+                rows = self._connection.execute(
+                    """
+                    SELECT source_kind AS kind, source_id AS identifier
+                    FROM dt_dependencies
+                    WHERE twin_id = ?
+                      AND dependent_kind = ? AND dependent_id = ?
+                      AND created_sequence <= ?
+                    ORDER BY source_kind, source_id
+                    """,
+                    (twin_id, dependent_kind, dependent_id, cutoff),
                 ).fetchall()
         return tuple((str(row["kind"]), str(row["identifier"])) for row in rows)
 

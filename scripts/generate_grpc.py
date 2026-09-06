@@ -8,7 +8,6 @@ import sys
 from importlib.resources import files
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PROTO = ROOT / "proto" / "argo" / "dt" / "v1" / "twin.proto"
 

@@ -243,6 +243,7 @@ class ServiceTests(unittest.IsolatedAsyncioTestCase):
             claim_id=str(claim.payload["claim_id"]),
             accepted=True,
             rationale="verified",
+            reviewed_at=self.instant,
             expected_sequence=sequence,
             idempotency_key=f"accept-{sequence}",
             actor=self.reviewer_actor,

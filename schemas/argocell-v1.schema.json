@@ -230,6 +230,16 @@
               "type": "null"
             }
           ]
+        },
+        "topology": {
+          "enum": [
+            "point",
+            "line",
+            "face",
+            "volume",
+            "root"
+          ],
+          "default": "point"
         }
       }
     },
@@ -318,4 +328,3 @@
     }
   }
 }
-

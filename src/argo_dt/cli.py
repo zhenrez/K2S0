@@ -97,6 +97,7 @@ async def _demo() -> None:
             claim_id=str(claim.payload["claim_id"]),
             accepted=True,
             rationale="Accurate but intentionally scoped.",
+            reviewed_at=now,
             expected_sequence=2,
             idempotency_key="demo-review-1",
             actor=reviewer_actor,

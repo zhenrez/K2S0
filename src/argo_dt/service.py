@@ -11,9 +11,18 @@ from typing import Any
 
 from .aggregate import TwinAggregate, TwinState
 from .compiler import ProjectionCompiler
+from .epistemic import (
+    ElicitationPlan,
+    ElicitationResponse,
+    EpistemicNodeKind,
+    GapDirectedElicitor,
+    LineageNode,
+    LineageTrace,
+    LineageTracer,
+)
 from .errors import AuthorizationDenied, ConcurrencyConflict, InvariantViolation
 from .ownership import EventOwnershipPolicy
-from .ports import DurableEventStore
+from .ports import BronzeVault, DurableEventStore
 from .simulation import SimulationBranch, SimulationEngine
 from .sync import (
     BoundedEventBroker,
@@ -35,6 +44,7 @@ from .types import (
     ProjectionReceipt,
     ProjectionRequest,
     Sensitivity,
+    canonical_json,
     content_hash,
     utc_now,
 )
@@ -56,6 +66,7 @@ class DigitalTwinService:
         cursor_signer: CursorCodec | None = None,
         sync_limits: SyncLimits | None = None,
         state_cache_entries: int = 128,
+        bronze_vault: BronzeVault | None = None,
     ) -> None:
         if snapshot_interval < 0:
             raise ValueError("snapshot_interval cannot be negative")
@@ -79,6 +90,9 @@ class DigitalTwinService:
         self.outbox_retention = outbox_retention
         self._state_cache_entries = state_cache_entries
         self._state_cache: OrderedDict[str, TwinState] = OrderedDict()
+        self.bronze_vault = bronze_vault
+        self.elicitor = GapDirectedElicitor()
+        self.lineage_tracer = LineageTracer(store)
 
     async def append(
         self,
@@ -268,10 +282,6 @@ class DigitalTwinService:
         if not provenance:
             raise InvariantViolation("a claim cannot be proposed without provenance")
         state = self.state(twin_id)
-        if state.sequence != expected_sequence:
-            raise ConcurrencyConflict(
-                f"claim expected {expected_sequence}, state is {state.sequence}"
-            )
         if state.subject_id is None or state.subject_id != subject_id:
             raise InvariantViolation("claim subject does not match twin subject")
         for ref in provenance:
@@ -284,7 +294,12 @@ class DigitalTwinService:
                     "claim provenance independence group does not match evidence"
                 )
         TwinAggregate.validate_epistemic(dict(epistemic))
-        claim_id = str(uuid.uuid4())
+        claim_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"{twin_id}:claim:{idempotency_key}",
+            )
+        )
         event = EventEnvelope.new(
             twin_id=twin_id,
             event_type="ClaimProposed",
@@ -315,6 +330,7 @@ class DigitalTwinService:
         claim_id: str,
         accepted: bool,
         rationale: str,
+        reviewed_at: datetime,
         expected_sequence: int,
         idempotency_key: str,
         actor: ActorContext,
@@ -332,6 +348,7 @@ class DigitalTwinService:
             producer=actor.identity_id,
             producer_role=ProducerRole.HUMAN_REVIEW,
             idempotency_key=idempotency_key,
+            occurred_at=reviewed_at,
             payload={
                 "claim_id": claim_id,
                 "reviewer_identity_id": actor.identity_id,
@@ -340,12 +357,310 @@ class DigitalTwinService:
         )
         state = self.state(twin_id)
         self.ownership_policy.authorize_subject(actor, state.subject_id)
-        if state.sequence != expected_sequence:
-            raise ConcurrencyConflict(
-                f"review expected {expected_sequence}, state is {state.sequence}"
-            )
         if claim_id not in state.claims:
             raise InvariantViolation("cannot review an unknown claim")
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def link_entity(
+        self,
+        *,
+        twin_id: str,
+        subject_id: str,
+        namespace: str,
+        entity_id: str,
+        provenance: Sequence[Mapping[str, Any]],
+        confidence: float,
+        valid_from: datetime,
+        valid_until: datetime | None,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "EntityLinked", ProducerRole.IDENTITY_WORKER, actor
+        )
+        self.ownership_policy.authorize_subject(actor, subject_id)
+        link_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"{twin_id}:{subject_id}:{namespace}:{entity_id}",
+            )
+        )
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="EntityLinked",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.IDENTITY_WORKER,
+            idempotency_key=idempotency_key,
+            occurred_at=valid_from,
+            payload={
+                "entity_link_id": link_id,
+                "subject_id": subject_id,
+                "namespace": namespace,
+                "entity_id": entity_id,
+                "provenance": [dict(reference) for reference in provenance],
+                "confidence": confidence,
+                "valid_from": valid_from.isoformat(),
+                "valid_until": valid_until.isoformat() if valid_until else None,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def unlink_entity(
+        self,
+        *,
+        twin_id: str,
+        entity_link_id: str,
+        reason: str,
+        unlinked_at: datetime,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "EntityUnlinked", ProducerRole.IDENTITY_WORKER, actor
+        )
+        state = self.state(twin_id)
+        self.ownership_policy.authorize_subject(actor, state.subject_id)
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="EntityUnlinked",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.IDENTITY_WORKER,
+            idempotency_key=idempotency_key,
+            occurred_at=unlinked_at,
+            payload={
+                "entity_link_id": entity_link_id,
+                "subject_id": state.subject_id,
+                "reason": reason,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def detect_contradiction(
+        self,
+        *,
+        twin_id: str,
+        claim_ids: Sequence[str],
+        basis: str,
+        detected_at: datetime,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "ContradictionDetected", ProducerRole.ADJUDICATION_WORKER, actor
+        )
+        state = self.state(twin_id)
+        self.ownership_policy.authorize_subject(actor, state.subject_id)
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="ContradictionDetected",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.ADJUDICATION_WORKER,
+            idempotency_key=idempotency_key,
+            occurred_at=detected_at,
+            payload={
+                "contradiction_id": str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL,
+                        f"{twin_id}:contradiction:{idempotency_key}",
+                    )
+                ),
+                "subject_id": state.subject_id,
+                "claim_ids": list(claim_ids),
+                "basis": basis,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def adjudicate_contradiction(
+        self,
+        *,
+        twin_id: str,
+        contradiction_id: str,
+        resolution: str,
+        preferred_claim_ids: Sequence[str],
+        rationale: str,
+        adjudicated_at: datetime,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "ContradictionAdjudicated", ProducerRole.HUMAN_REVIEW, actor
+        )
+        state = self.state(twin_id)
+        self.ownership_policy.authorize_subject(actor, state.subject_id)
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="ContradictionAdjudicated",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.HUMAN_REVIEW,
+            idempotency_key=idempotency_key,
+            occurred_at=adjudicated_at,
+            payload={
+                "contradiction_id": contradiction_id,
+                "subject_id": state.subject_id,
+                "resolution": resolution,
+                "preferred_claim_ids": list(preferred_claim_ids),
+                "reviewer_identity_id": actor.identity_id,
+                "rationale": rationale,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    async def record_correction(
+        self,
+        *,
+        twin_id: str,
+        target_kind: str,
+        target_id: str,
+        replacement_id: str,
+        rationale: str,
+        corrected_at: datetime,
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "CorrectionRecorded", ProducerRole.HUMAN_REVIEW, actor
+        )
+        state = self.state(twin_id)
+        self.ownership_policy.authorize_subject(actor, state.subject_id)
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="CorrectionRecorded",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.HUMAN_REVIEW,
+            idempotency_key=idempotency_key,
+            occurred_at=corrected_at,
+            payload={
+                "correction_id": str(
+                    uuid.uuid5(
+                        uuid.NAMESPACE_URL,
+                        f"{twin_id}:correction:{idempotency_key}",
+                    )
+                ),
+                "subject_id": state.subject_id,
+                "target_kind": target_kind,
+                "target_id": target_id,
+                "replacement_id": replacement_id,
+                "reviewer_identity_id": actor.identity_id,
+                "rationale": rationale,
+            },
+        )
+        return await self.append(event, actor=actor, expected_sequence=expected_sequence)
+
+    def trace_lineage(
+        self,
+        twin_id: str,
+        *,
+        node_kind: EpistemicNodeKind,
+        node_id: str,
+        as_of_recorded_time: datetime | None = None,
+    ) -> LineageTrace:
+        state = self.state(twin_id, as_of_recorded_time=as_of_recorded_time)
+        return self.lineage_tracer.trace(state, LineageNode(node_kind, node_id))
+
+    def plan_elicitation(
+        self,
+        twin_id: str,
+        *,
+        objective: str,
+        claim_ids: tuple[str, ...] | None = None,
+    ) -> ElicitationPlan:
+        return self.elicitor.plan(
+            self.state(twin_id),
+            objective=objective,
+            claim_ids=claim_ids,
+        )
+
+    async def record_elicitation_response(
+        self,
+        *,
+        twin_id: str,
+        subject_id: str,
+        plan: ElicitationPlan,
+        response: ElicitationResponse,
+        rights: Mapping[str, Any],
+        expected_sequence: int,
+        idempotency_key: str,
+        actor: ActorContext,
+    ) -> EventEnvelope:
+        self.ownership_policy.authorize_intent(
+            "EvidenceIngested", ProducerRole.INGEST_SERVICE, actor
+        )
+        self.ownership_policy.authorize_subject(actor, subject_id)
+        if self.bronze_vault is None:
+            raise InvariantViolation("elicitation requires a configured Bronze vault")
+        if plan.twin_id != twin_id:
+            raise InvariantViolation("elicitation plan belongs to a different twin")
+        source_state = self.state(twin_id, up_to_sequence=plan.source_sequence)
+        self.elicitor.verify_plan(source_state, plan)
+        question = plan.question(response.question_id)
+        state = self.state(twin_id)
+        if state.subject_id is not None and state.subject_id != subject_id:
+            raise InvariantViolation("elicitation subject does not match twin subject")
+        content = canonical_json(
+            {
+                "schema_version": "argo.dt.elicitation-response/v1",
+                "plan_id": plan.plan_id,
+                "question_id": response.question_id,
+                "answer": response.answer,
+                "answered_at": response.answered_at,
+            }
+        ).encode("utf-8")
+        object_uri, source_hash = self.bronze_vault.put(
+            subject_id=subject_id,
+            media_type="application/json",
+            content=content,
+            metadata={
+                "connector_id": "argo.dt.elicitation",
+                "source_record_id": response.response_id,
+                "plan_id": plan.plan_id,
+                "question_id": response.question_id,
+            },
+        )
+        evidence_id = str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                f"{twin_id}:{subject_id}:elicitation:{response.response_id}",
+            )
+        )
+        event = EventEnvelope.new(
+            twin_id=twin_id,
+            event_type="EvidenceIngested",
+            plane=EventPlane.AUTHORITATIVE,
+            producer=actor.identity_id,
+            producer_role=ProducerRole.INGEST_SERVICE,
+            idempotency_key=idempotency_key,
+            occurred_at=response.answered_at,
+            payload={
+                "evidence_id": evidence_id,
+                "subject_id": subject_id,
+                "source": "elicitation",
+                "source_record_id": response.response_id,
+                "content_hash": source_hash,
+                "bronze_uri": object_uri,
+                "normalized_payload": {
+                    "plan_id": plan.plan_id,
+                    "plan_source_sequence": plan.source_sequence,
+                    "gap_id": question.gap_id,
+                    "question_id": question.question_id,
+                },
+                "rights": dict(rights),
+                "sensitivity": response.sensitivity.value,
+                "valid_from": response.answered_at.isoformat(),
+                "valid_until": None,
+                "independence_group": f"elicitation:{plan.plan_id}",
+            },
+        )
         return await self.append(event, actor=actor, expected_sequence=expected_sequence)
 
     def state(
@@ -353,17 +668,20 @@ class DigitalTwinService:
         twin_id: str,
         *,
         up_to_sequence: int | None = None,
+        as_of_valid_time: datetime | None = None,
         as_of_recorded_time: datetime | None = None,
     ) -> TwinState:
         if up_to_sequence is None and as_of_recorded_time is None:
-            return copy.deepcopy(self._latest_state(twin_id))
-        return TwinAggregate.rebuild(
-            self.store,
-            twin_id,
-            snapshot_store=self.store,
-            up_to_sequence=up_to_sequence,
-            as_of_recorded_time=as_of_recorded_time,
-        )
+            state = copy.deepcopy(self._latest_state(twin_id))
+        else:
+            state = TwinAggregate.rebuild(
+                self.store,
+                twin_id,
+                snapshot_store=self.store,
+                up_to_sequence=up_to_sequence,
+                as_of_recorded_time=as_of_recorded_time,
+            )
+        return state.select_valid_at(as_of_valid_time) if as_of_valid_time else state
 
     @property
     def cached_twin_count(self) -> int:

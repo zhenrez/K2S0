@@ -84,6 +84,20 @@ def main() -> None:
     }
     if forbidden_deadletter_fields.intersection(deadletter["properties"]):
         fail("dead-letter marker duplicates canonical or resumability material")
+    topology = schemas["argocell-v1.schema.json"]["$defs"]["relation"][
+        "properties"
+    ]["topology"]["enum"]
+    if set(topology) != {"point", "line", "face", "volume", "root"}:
+        fail("ARGOCell relation topology drifted from the five-level contract")
+    for required_schema in {
+        "lineage-trace-v1.schema.json",
+        "elicitation-plan-v1.schema.json",
+    }:
+        if required_schema not in schemas:
+            fail(f"missing DT-3 schema {required_schema}")
+    elicitation_schema = schemas["elicitation-plan-v1.schema.json"]
+    if "claim_ids" not in elicitation_schema["required"]:
+        fail("elicitation plan schema does not bind selected claims")
 
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
@@ -107,6 +121,17 @@ def main() -> None:
     state_change = openapi["components"]["schemas"]["StateChangeFrame"]
     if forbidden_stream_fields.intersection(state_change["properties"]):
         fail("public state-change frames expose canonical event internals")
+    for path in {
+        "/v1/twins/{twin_id}/lineage/{node_kind}/{node_id}",
+        "/v1/twins/{twin_id}/contradictions",
+        "/v1/twins/{twin_id}/corrections",
+        "/v1/twins/{twin_id}/elicitation/plans",
+        "/v1/twins/{twin_id}/elicitation/responses",
+    }:
+        if path not in openapi["paths"]:
+            fail(f"OpenAPI is missing DT-3 path {path}")
+    if "claim_ids" not in openapi["components"]["schemas"]["ElicitationPlan"]["required"]:
+        fail("OpenAPI elicitation plan does not bind selected claims")
 
     proto = (ROOT / "proto" / "argo" / "dt" / "v1" / "twin.proto").read_text()
     if "string producer_role = 15;" not in proto:
@@ -117,6 +142,12 @@ def main() -> None:
         fail("protobuf state subscription is not bidirectional")
     if "repeated TelemetryRecordAck record_acks = 8;" not in proto:
         fail("protobuf telemetry acknowledgement lacks per-record status")
+    if "rpc TraceLineage(LineageRequest) returns (LineageTrace);" not in proto:
+        fail("protobuf is missing reversible lineage query")
+    if "rpc RecordElicitationResponse(RecordElicitationResponseRequest)" not in proto:
+        fail("protobuf is missing Bronze-bound elicitation response")
+    if "repeated string claim_ids = 8;" not in proto:
+        fail("protobuf elicitation plan cannot bind selected claims")
     state_change_proto = proto.split("message StateChange {", 1)[1].split("}", 1)[0]
     if "payload" in state_change_proto or "event_hash" in state_change_proto:
         fail("protobuf state-change frame exposes canonical payload or hash")
@@ -140,6 +171,10 @@ def main() -> None:
                 "SELECT name FROM sqlite_master WHERE type = 'table'"
             )
         }
+        dependency_columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(dt_dependencies)")
+        }
     except sqlite3.Error as exc:
         fail(f"SQLite migration does not execute: {exc}")
     finally:
@@ -153,6 +188,8 @@ def main() -> None:
     }
     if not required_tables.issubset(tables):
         fail("SQLite migration is missing authoritative persistence tables")
+    if "relation" not in dependency_columns:
+        fail("SQLite lineage index is missing typed relation edges")
 
     print(
         f"validated {len(schema_files)} JSON Schemas, OpenAPI 3.1, protobuf, and SQLite"

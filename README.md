@@ -14,6 +14,8 @@ provides:
 - append-only, hash-chained event storage with idempotency and optimistic
   concurrency, hash-verified snapshots, and a transactional outbox;
 - an AES-256-GCM Bronze vault and durable transitive deletion invalidation;
+- reversible SQLite lineage, explicit contradiction review/corrections, typed
+  relation topology, and encrypted gap-directed elicitation;
 - bitemporal state, isolated simulation branches, default-deny projection
   compilation, bounded durable replay/live synchronization, and signed cursors;
 - a bounded, SQLite-head-verified latest-state cache for sustained ingest;
@@ -108,6 +110,7 @@ make grpc-generate
 - [Host merge contract](docs/MERGE_CONTRACT.md)
 - [Reference repository map](docs/REPOSITORY_PATTERN_MAP.md)
 - [Performance and security](docs/PERFORMANCE_SECURITY.md)
+- [DT-3 epistemic core](docs/EPISTEMIC_CORE.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [gRPC contract](proto/argo/dt/v1/twin.proto)
 - [REST contract](openapi/dt-v1.yaml)

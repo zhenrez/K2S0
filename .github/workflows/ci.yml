@@ -25,6 +25,9 @@ jobs:
       - run: python -m compileall -q src tests scripts
       - run: PYTHONPATH=src python -m argo_dt.cli demo >/dev/null
       - run: >-
+          PYTHONPATH=src python scripts/benchmark_epistemic.py
+          --claims 1000 --iterations 10 --max-ancestor-p99-ms 250 --json
+      - run: >-
           PYTHONPATH=src python scripts/soak_sync.py
           --duration-seconds 2 --events-per-second 50
           --max-p99-ms 1000 --minimum-throughput 25 --json

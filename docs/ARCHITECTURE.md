@@ -121,6 +121,13 @@ ordering, replay, cursor, acknowledgement, subject, and projection-plane rules
 to the same service. NATS distributes already-committed events at least once;
 OpenTelemetry observes aggregate counters only.
 
+The 0.6.0 epistemic core adds evidence-backed entity links, explicit competing
+claim findings and human adjudication, append-only target-to-replacement
+corrections, and bidirectional sequence-bounded lineage. Valid-time selection
+composes with recorded-time replay. Gap-directed questions are derived from
+observable deficits, and plaintext answers enter the encrypted Bronze vault;
+the ledger retains only hash/URI and plan metadata.
+
 ~~~mermaid
 flowchart TB
   CLIENTS["Devices / browsers"] --> AUTH["Injected OIDC + mTLS authenticator"]
@@ -176,6 +183,7 @@ agent, tool, hypothesis, resource, and repository state. It contains:
 
 - one of four identity kinds;
 - typed constituent and arbitrary relations;
+- a Point, Line, Face, Volume, or Root semantic topology on each relation;
 - observed, desired, and predicted state;
 - requirements, constraints, and intents;
 - bitemporal coordinates;

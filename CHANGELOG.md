@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.0 — 2026-09-05
+
+- Added executable evidence-backed entity linking, competing-claim detection,
+  separate human contradiction adjudication, and append-only corrections.
+- Upgraded the SQLite dependency index to typed, sequence-bounded forward and
+  reverse lineage traversal with covering indexes and v1 rebuild migration.
+- Added valid-time state selection alongside existing recorded-time replay,
+  while preserving stream sequence/hash coordinates.
+- Added Point, Line, Face, Volume, and Root topology levels to typed ARGOCell
+  relations without requiring a graph database.
+- Added deterministic gap-directed elicitation for missing, weakly independent,
+  contested, stale, and contradictory knowledge.
+- Added a 1 MiB-bounded elicitation response workflow that encrypts plaintext
+  in Bronze and writes only metadata and content hashes to the event ledger.
+- Bound elicitation plans to canonical claim sets and verify them against their
+  exact recorded source state before accepting a response.
+- Added lineage and elicitation JSON Schemas, REST/gRPC contracts, eight new
+  invariant IDs, and end-to-end epistemic conformance tests.
+- Pinned the CI test, lint, and type-check toolchain after validating the new
+  baseline with Ruff 0.16.6 and strict mypy 2.3.1.
+- Retained SQLite/WAL as the only authoritative/default database; Neo4j remains
+  an optional rebuildable read model.
+
 ## 0.5.0 — 2026-09-05
 
 - Added an authenticated raw-ASGI WebSocket runtime for the state protocol,
