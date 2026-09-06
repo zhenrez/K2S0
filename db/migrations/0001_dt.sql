@@ -153,17 +153,38 @@ CREATE INDEX IF NOT EXISTS dt_outbox_pending_idx
 
 CREATE TABLE IF NOT EXISTS dt_dependencies (
     twin_id TEXT NOT NULL,
-    source_kind TEXT NOT NULL CHECK (source_kind IN ('evidence', 'claim')),
+    source_kind TEXT NOT NULL CHECK (
+        source_kind IN (
+            'evidence', 'entity', 'claim', 'contradiction',
+            'correction', 'projection'
+        )
+    ),
     source_id TEXT NOT NULL,
-    dependent_kind TEXT NOT NULL CHECK (dependent_kind IN ('claim', 'projection')),
+    dependent_kind TEXT NOT NULL CHECK (
+        dependent_kind IN (
+            'evidence', 'entity', 'claim', 'contradiction',
+            'correction', 'projection'
+        )
+    ),
     dependent_id TEXT NOT NULL,
     created_sequence INTEGER NOT NULL,
-    PRIMARY KEY (twin_id, source_kind, source_id, dependent_kind, dependent_id),
+    relation TEXT NOT NULL,
+    PRIMARY KEY (
+        twin_id, source_kind, source_id, dependent_kind, dependent_id, relation
+    ),
     FOREIGN KEY (twin_id, created_sequence) REFERENCES dt_events(twin_id, sequence)
 );
 
 CREATE INDEX IF NOT EXISTS dt_dependencies_source_idx
-    ON dt_dependencies (twin_id, source_kind, source_id);
+    ON dt_dependencies (
+        twin_id, source_kind, source_id, created_sequence,
+        dependent_kind, dependent_id
+    );
+CREATE INDEX IF NOT EXISTS dt_dependencies_dependent_idx
+    ON dt_dependencies (
+        twin_id, dependent_kind, dependent_id, created_sequence,
+        source_kind, source_id
+    );
 
 CREATE TABLE IF NOT EXISTS dt_invalidation_queue (
     twin_id TEXT NOT NULL,

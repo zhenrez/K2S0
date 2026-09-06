@@ -131,7 +131,7 @@ async def run(args: argparse.Namespace, database: Path) -> dict[str, Any]:
                 asyncio.gather(writer(started), reader()),
                 timeout=args.duration_seconds + 30,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             errors.append("TimeoutError")
         elapsed = time.perf_counter() - started
         _current, peak_bytes = tracemalloc.get_traced_memory()

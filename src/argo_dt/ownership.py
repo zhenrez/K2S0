@@ -15,6 +15,7 @@ EVENT_OWNERS: Mapping[str, frozenset[ProducerRole]] = {
     "EntityUnlinked": frozenset({ProducerRole.IDENTITY_WORKER}),
     "ClaimProposed": frozenset({ProducerRole.ADJUDICATION_WORKER}),
     "ContradictionDetected": frozenset({ProducerRole.ADJUDICATION_WORKER}),
+    "ContradictionAdjudicated": frozenset({ProducerRole.HUMAN_REVIEW}),
     "ReferralCreated": frozenset({ProducerRole.ADJUDICATION_WORKER}),
     "ClaimAccepted": frozenset({ProducerRole.HUMAN_REVIEW}),
     "ClaimContested": frozenset({ProducerRole.HUMAN_REVIEW}),

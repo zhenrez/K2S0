@@ -159,6 +159,16 @@ class TemporalState(StrEnum):
     UNKNOWN = "unknown"
 
 
+class RelationTopology(StrEnum):
+    """Semantic scale of an ARGOCell relation, independent of storage shape."""
+
+    POINT = "point"
+    LINE = "line"
+    FACE = "face"
+    VOLUME = "volume"
+    ROOT = "root"
+
+
 @dataclass(frozen=True, slots=True)
 class BitemporalInterval:
     valid_from: datetime
@@ -214,6 +224,12 @@ class ProvenanceRef:
     independence_group: str
     transform_id: str | None = None
 
+    def __post_init__(self) -> None:
+        if not self.evidence_id or not self.relation or not self.independence_group:
+            raise InvariantViolation(
+                "provenance requires evidence_id, relation, and independence_group"
+            )
+
 
 @dataclass(frozen=True, slots=True)
 class TypedRelation:
@@ -221,8 +237,13 @@ class TypedRelation:
     target_cell_id: str
     constituent: bool = False
     confidence: float | None = None
+    topology: RelationTopology = RelationTopology.POINT
 
     def __post_init__(self) -> None:
+        if not self.relation_type or not self.target_cell_id:
+            raise InvariantViolation("relation_type and target_cell_id are required")
+        if not isinstance(self.topology, RelationTopology):
+            raise InvariantViolation("relation topology must be a RelationTopology value")
         if self.confidence is not None and not 0.0 <= self.confidence <= 1.0:
             raise InvariantViolation("relation confidence must be in [0, 1]")
 

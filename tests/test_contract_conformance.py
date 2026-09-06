@@ -11,7 +11,7 @@ from argo_dt.compiler import ProjectionCompiler
 from argo_dt.conformance import load_golden_replay, replay_events
 from argo_dt.errors import InvariantViolation
 from argo_dt.event_store import SQLiteEventStore
-from argo_dt.invariants import INVARIANT_BY_ID, INVARIANTS
+from argo_dt.invariants import INVARIANT_BY_ID, INVARIANTS, InvariantId
 from argo_dt.policy import DefaultDenyPolicy
 from argo_dt.service import DigitalTwinService
 from argo_dt.types import (
@@ -48,6 +48,7 @@ def discovered_test_ids() -> set[str]:
 class ContractRegistryTests(unittest.TestCase):
     def test_every_invariant_has_unique_id_owner_and_executable_evidence(self) -> None:
         self.assertEqual(len(INVARIANTS), len(INVARIANT_BY_ID))
+        self.assertEqual(set(InvariantId), set(INVARIANT_BY_ID))
         available = discovered_test_ids()
         for spec in INVARIANTS:
             with self.subTest(invariant_id=spec.invariant_id):

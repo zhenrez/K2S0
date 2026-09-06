@@ -113,6 +113,144 @@ paths:
               schema: { $ref: "#/components/schemas/EventAppendReceipt" }
         "403": { $ref: "#/components/responses/Denied" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/lineage/{node_kind}/{node_id}:
+    get:
+      operationId: traceEpistemicLineage
+      description: Returns reverse ancestry and forward impact from the SQLite-derived index.
+      security:
+        - oidc: [dt.lineage.read]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - name: node_kind
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/EpistemicNodeKind" }
+        - name: node_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: as_of_recorded_time
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Reversible lineage trace grouped by independent evidence origin
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LineageTrace" }
+        "403": { $ref: "#/components/responses/Denied" }
+  /v1/twins/{twin_id}/contradictions:
+    post:
+      operationId: detectContradiction
+      security:
+        - oidc: [dt.adjudicate]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ContradictionRequest" }
+      responses:
+        "201":
+          description: Contradiction finding appended without changing claim status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventAppendReceipt" }
+        "403": { $ref: "#/components/responses/Denied" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/contradictions/{contradiction_id}/adjudicate:
+    post:
+      operationId: adjudicateContradiction
+      security:
+        - oidc: [dt.review]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - name: contradiction_id
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdjudicationRequest" }
+      responses:
+        "201":
+          description: Human adjudication appended separately from claim transitions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventAppendReceipt" }
+        "403": { $ref: "#/components/responses/Denied" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/corrections:
+    post:
+      operationId: recordCorrection
+      security:
+        - oidc: [dt.review]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CorrectionRequest" }
+      responses:
+        "201":
+          description: Append-only target-to-replacement correction
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventAppendReceipt" }
+        "403": { $ref: "#/components/responses/Denied" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/twins/{twin_id}/elicitation/plans:
+    post:
+      operationId: planGapDirectedElicitation
+      security:
+        - oidc: [dt.elicit]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ElicitationPlanRequest" }
+      responses:
+        "200":
+          description: Derived deterministic plan; no authoritative mutation occurs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ElicitationPlan" }
+        "403": { $ref: "#/components/responses/Denied" }
+  /v1/twins/{twin_id}/elicitation/responses:
+    post:
+      operationId: recordElicitationResponse
+      description: Encrypts the answer into Bronze before appending a metadata-only evidence event.
+      security:
+        - oidc: [dt.ingest]
+      parameters:
+        - $ref: "#/components/parameters/TwinId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/ExpectedSequence"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ElicitationResponseRequest" }
+      responses:
+        "201":
+          description: Encrypted Bronze object and EvidenceIngested event committed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventAppendReceipt" }
+        "403": { $ref: "#/components/responses/Denied" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /v1/twins/{twin_id}/simulations:
     post:
       operationId: forkSimulation
@@ -178,6 +316,11 @@ components:
             dt.stream: Subscribe to subject-scoped state-change notifications
             dt.project: Compile projections
             dt.project.revoke: Revoke projections
+            dt.lineage.read: Read private evidence and claim lineage
+            dt.adjudicate: Propose contradiction findings
+            dt.review: Append human adjudication and correction decisions
+            dt.elicit: Plan gap-directed elicitation
+            dt.ingest: Store elicitation responses as encrypted Bronze evidence
             dt.simulate: Run isolated simulations
             dt.action.check: Evaluate action authority
   parameters:
@@ -302,9 +445,19 @@ components:
         - twin_id
         - sequence
         - evidence
+        - entity_links
+        - unlinked_entity_ids
+        - stale_entity_link_ids
         - claims
         - accepted_claim_ids
         - contested_claim_ids
+        - retired_claim_ids
+        - superseded_evidence_ids
+        - superseded_claim_ids
+        - contradictions
+        - adjudications
+        - resolved_contradiction_ids
+        - corrections
         - issued_projections
         - revoked_projection_ids
         - stale_claim_ids
@@ -316,6 +469,17 @@ components:
         evidence:
           type: object
           additionalProperties: { type: object }
+        entity_links:
+          type: object
+          additionalProperties: { type: object }
+        unlinked_entity_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        stale_entity_link_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
         claims:
           type: object
           additionalProperties: { type: object }
@@ -327,6 +491,31 @@ components:
           type: array
           uniqueItems: true
           items: { type: string }
+        retired_claim_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        superseded_evidence_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        superseded_claim_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        contradictions:
+          type: object
+          additionalProperties: { type: object }
+        adjudications:
+          type: object
+          additionalProperties: { type: object }
+        resolved_contradiction_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string }
+        corrections:
+          type: object
+          additionalProperties: { type: object }
         issued_projections:
           type: object
           additionalProperties: { type: object }
@@ -341,6 +530,160 @@ components:
         degraded_reasons:
           type: array
           items: { type: string }
+    EpistemicNodeKind:
+      enum: [evidence, entity, claim, contradiction, correction, projection]
+    LineageNode:
+      type: object
+      additionalProperties: false
+      required: [kind, node_id]
+      properties:
+        kind: { $ref: "#/components/schemas/EpistemicNodeKind" }
+        node_id: { type: string, minLength: 1 }
+    LineageTrace:
+      type: object
+      additionalProperties: false
+      required: [schema_version, twin_id, root, ancestors, dependents, evidence_groups]
+      properties:
+        schema_version: { const: argo.dt.lineage-trace/v1 }
+        twin_id: { type: string, minLength: 1 }
+        root: { $ref: "#/components/schemas/LineageNode" }
+        ancestors:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/LineageNode" }
+        dependents:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/LineageNode" }
+        evidence_groups:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [independence_group, evidence_ids]
+            properties:
+              independence_group: { type: string, minLength: 1 }
+              evidence_ids:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items: { type: string, minLength: 1 }
+    ContradictionRequest:
+      type: object
+      additionalProperties: false
+      required: [claim_ids, basis, detected_at]
+      properties:
+        claim_ids:
+          type: array
+          minItems: 2
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        basis: { type: string, minLength: 1, maxLength: 4000 }
+        detected_at: { type: string, format: date-time }
+    AdjudicationRequest:
+      type: object
+      additionalProperties: false
+      required: [resolution, preferred_claim_ids, rationale, adjudicated_at]
+      properties:
+        resolution:
+          enum: [uphold, retain_competing, insufficient_evidence, corrected]
+        preferred_claim_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        rationale: { type: string, minLength: 1, maxLength: 4000 }
+        adjudicated_at: { type: string, format: date-time }
+    CorrectionRequest:
+      type: object
+      additionalProperties: false
+      required: [target_kind, target_id, replacement_id, rationale, corrected_at]
+      properties:
+        target_kind: { enum: [evidence, claim] }
+        target_id: { type: string, minLength: 1 }
+        replacement_id: { type: string, minLength: 1 }
+        rationale: { type: string, minLength: 1, maxLength: 4000 }
+        corrected_at: { type: string, format: date-time }
+    ElicitationGap:
+      type: object
+      additionalProperties: false
+      required: [gap_id, kind, target_ids, rationale]
+      properties:
+        gap_id: { type: string, minLength: 1 }
+        kind:
+          enum:
+            - missing_claim
+            - independence_deficit
+            - contested_claim
+            - stale_lineage
+            - unresolved_contradiction
+        target_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        rationale: { type: string, minLength: 1 }
+    ElicitationQuestion:
+      type: object
+      additionalProperties: false
+      required: [question_id, gap_id, prompt, requested_relation]
+      properties:
+        question_id: { type: string, minLength: 1 }
+        gap_id: { type: string, minLength: 1 }
+        prompt: { type: string, minLength: 1 }
+        requested_relation: { const: supports_or_refutes }
+    ElicitationPlan:
+      type: object
+      additionalProperties: false
+      required: [schema_version, plan_id, twin_id, source_sequence, objective, claim_ids, gaps, questions]
+      properties:
+        schema_version: { const: argo.dt.elicitation-plan/v1 }
+        plan_id: { type: string, minLength: 1 }
+        twin_id: { type: string, minLength: 1 }
+        source_sequence: { type: integer, minimum: 0 }
+        objective: { type: string, minLength: 1 }
+        claim_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        gaps:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/ElicitationGap" }
+        questions:
+          type: array
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/ElicitationQuestion" }
+    ElicitationPlanRequest:
+      type: object
+      additionalProperties: false
+      required: [objective]
+      properties:
+        objective: { type: string, minLength: 1, maxLength: 4000 }
+        claim_ids:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+    ElicitationResponseRequest:
+      type: object
+      additionalProperties: false
+      required: [subject_id, plan, response, rights]
+      properties:
+        subject_id: { type: string, minLength: 1 }
+        plan: { $ref: "#/components/schemas/ElicitationPlan" }
+        response:
+          type: object
+          additionalProperties: false
+          required: [response_id, question_id, answer, sensitivity, answered_at]
+          properties:
+            response_id: { type: string, minLength: 1 }
+            question_id: { type: string, minLength: 1 }
+            answer:
+              type: string
+              minLength: 1
+              maxLength: 1048576
+              x-maxBytes: 1048576
+            sensitivity: { enum: [public, internal, confidential, restricted] }
+            answered_at: { type: string, format: date-time }
+        rights: { type: object }
     ProjectionRequest:
       type: object
       additionalProperties: false

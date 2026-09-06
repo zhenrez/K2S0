@@ -76,6 +76,17 @@ class DependencyIndex(Protocol):
         source_id: str,
         *,
         transitive: bool = True,
+        up_to_sequence: int | None = None,
+    ) -> tuple[tuple[str, str], ...]: ...
+
+    def ancestors(
+        self,
+        twin_id: str,
+        dependent_kind: str,
+        dependent_id: str,
+        *,
+        transitive: bool = True,
+        up_to_sequence: int | None = None,
     ) -> tuple[tuple[str, str], ...]: ...
 
     def pending_invalidations(self, *, limit: int = 100) -> list[InvalidationRecord]: ...

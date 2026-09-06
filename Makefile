@@ -1,4 +1,4 @@
-.PHONY: test demo contracts grpc-generate benchmark-sync soak-sync lint typecheck package
+.PHONY: test demo contracts grpc-generate benchmark-sync benchmark-epistemic soak-sync lint typecheck package
 
 test:
 	PYTHONPATH=src python3 -m unittest discover -s tests -v
@@ -14,6 +14,9 @@ grpc-generate:
 
 benchmark-sync:
 	PYTHONPATH=src python3 scripts/benchmark_sync.py
+
+benchmark-epistemic:
+	PYTHONPATH=src python3 scripts/benchmark_epistemic.py
 
 soak-sync:
 	PYTHONPATH=src python3 scripts/soak_sync.py --duration-seconds 60

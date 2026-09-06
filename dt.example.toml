@@ -10,6 +10,7 @@ state_cache_entries = 128
 max_batch_records = 500
 max_record_bytes = 1048576
 max_batch_bytes = 4194304
+max_elicitation_answer_bytes = 1048576
 
 [storage]
 event_store = "sqlite:///var/lib/argo-dt/dt.db"

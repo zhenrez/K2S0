@@ -9,6 +9,8 @@
 | action-envelope-v1.schema.json | Separately authorized downstream action request |
 | state-stream-v1.schema.json | Payload-minimized WebSocket state/change protocol |
 | deadletter-v1.schema.json | Payload-free NATS replay coordinate and failure code |
+| lineage-trace-v1.schema.json | Reversible ancestry, impact, and evidence-group trace |
+| elicitation-plan-v1.schema.json | Deterministic epistemic gaps and Bronze-bound questions |
 
 JSON Schema defines storage and JSON interoperability. Protobuf defines the
 high-throughput wire representation. Semantic changes require a new major

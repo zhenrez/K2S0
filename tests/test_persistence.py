@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -421,6 +422,99 @@ class DependencyInvalidationTests(unittest.TestCase):
                 "evidence-rebuild",
             ),
         )
+
+    def test_v1_dependency_schema_upgrades_and_rebuilds_reverse_lineage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "upgrade.db"
+            store = SQLiteEventStore(path)
+            try:
+                evidence = EventEnvelope.new(
+                    twin_id="upgrade-twin",
+                    event_type="EvidenceIngested",
+                    plane=EventPlane.AUTHORITATIVE,
+                    payload={
+                        "evidence_id": "upgrade-evidence",
+                        "subject_id": "upgrade-subject",
+                        "content_hash": "sha256:evidence",
+                        "source": "test",
+                        "rights": {},
+                        "sensitivity": "internal",
+                        "independence_group": "upgrade-source",
+                    },
+                    producer="upgrade-ingest",
+                    producer_role=ProducerRole.INGEST_SERVICE,
+                    idempotency_key="upgrade-evidence",
+                )
+                store.append(evidence, expected_sequence=0)
+                claim = EventEnvelope.new(
+                    twin_id="upgrade-twin",
+                    event_type="ClaimProposed",
+                    plane=EventPlane.AUTHORITATIVE,
+                    payload={
+                        "claim_id": "upgrade-claim",
+                        "subject_id": "upgrade-subject",
+                        "statement": "upgrade claim",
+                        "provenance": [
+                            {
+                                "evidence_id": "upgrade-evidence",
+                                "relation": "supports",
+                                "independence_group": "upgrade-source",
+                            }
+                        ],
+                        "epistemic": {},
+                    },
+                    producer="upgrade-adjudicator",
+                    producer_role=ProducerRole.ADJUDICATION_WORKER,
+                    idempotency_key="upgrade-claim",
+                )
+                store.append(claim, expected_sequence=1)
+            finally:
+                store.close()
+
+            connection = sqlite3.connect(path)
+            try:
+                connection.execute("DROP TABLE dt_dependencies")
+                connection.execute(
+                    """
+                    CREATE TABLE dt_dependencies (
+                        twin_id TEXT NOT NULL,
+                        source_kind TEXT NOT NULL,
+                        source_id TEXT NOT NULL,
+                        dependent_kind TEXT NOT NULL,
+                        dependent_id TEXT NOT NULL,
+                        created_sequence INTEGER NOT NULL,
+                        PRIMARY KEY (
+                            twin_id, source_kind, source_id,
+                            dependent_kind, dependent_id
+                        )
+                    )
+                    """
+                )
+                connection.execute(
+                    "UPDATE dt_adapter_metadata SET value = 'v1' "
+                    "WHERE key = 'dependency_index'"
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            upgraded = SQLiteEventStore(path)
+            try:
+                columns = {
+                    str(row[1])
+                    for row in upgraded._connection.execute(  # noqa: SLF001
+                        "PRAGMA table_info(dt_dependencies)"
+                    )
+                }
+                self.assertIn("relation", columns)
+                self.assertEqual(
+                    (("evidence", "upgrade-evidence"),),
+                    upgraded.ancestors(
+                        "upgrade-twin", "claim", "upgrade-claim"
+                    ),
+                )
+            finally:
+                upgraded.close()
 
 
 class BronzeVaultTests(unittest.TestCase):

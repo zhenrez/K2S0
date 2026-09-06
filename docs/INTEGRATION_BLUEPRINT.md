@@ -164,9 +164,9 @@ time, and a bounded reason code—not the event payload, event ID, hash, or curs
 | Producer | Permitted events |
 | --- | --- |
 | ingest service | EvidenceIngested, EvidenceDeleted, AcquisitionCompleted |
-| identity worker | EntityLinked/Unlinked proposals |
+| identity worker | EntityLinked/Unlinked evidence-backed records |
 | adjudication worker | ClaimProposed, ContradictionDetected, ReferralCreated |
-| human review service | ClaimAccepted/Contested/Retired, CorrectionRecorded |
+| human review service | ClaimAccepted/Contested/Retired, ClaimSuperseded, ContradictionAdjudicated, CorrectionRecorded |
 | compiler | KernelCompiled, EvaluationCompleted, ReadinessChanged |
 | projection service | ProjectionIssued/Revoked |
 | simulation service | simulation-plane events only |
@@ -196,6 +196,22 @@ explicitly listed.
 ### ARGOCell
 
 Machine-readable JSON Schema: **schemas/argocell-v1.schema.json**.
+Its typed relations carry a storage-neutral `topology` value: `point`, `line`,
+`face`, `volume`, or `root`. Neo4j adapters may project these values but may not
+define or mutate their authoritative meaning.
+
+### Epistemic query and elicitation
+
+`LineageTrace` is available through REST `traceEpistemicLineage` and gRPC
+`TraceLineage`. It walks the SQLite-derived index in both directions at an
+optional recorded-time cutoff and groups source evidence by independence
+origin. Because the response exposes private claim/evidence IDs, it requires
+the dedicated `dt.lineage.read` scope rather than an ordinary projection read.
+
+Elicitation planning is a derived, deterministic query. Response submission is
+an ingest operation: the plaintext is encrypted in Bronze and only a bounded
+metadata record enters the ledger. See **docs/EPISTEMIC_CORE.md** for event and
+failure semantics.
 
 ### ProjectionRequest
 

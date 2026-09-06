@@ -39,6 +39,14 @@ class InvariantId(StrEnum):
     OBSERVABILITY_MINIMIZED = "DT-INV-030"
     TELEMETRY_RESULT_EXPLICIT = "DT-INV-031"
     LATEST_STATE_CACHE_DERIVED = "DT-INV-032"
+    REVERSIBLE_LINEAGE = "DT-INV-033"
+    CONTRADICTION_REVIEW_EXPLICIT = "DT-INV-034"
+    CORRECTION_APPEND_ONLY = "DT-INV-035"
+    VALID_TIME_SELECTION = "DT-INV-036"
+    RELATION_TOPOLOGY_TYPED = "DT-INV-037"
+    ELICITATION_BRONZE_BOUNDARY = "DT-INV-038"
+    IDENTITY_LINK_PROVENANCE = "DT-INV-039"
+    ELICITATION_PLAN_AUTHENTIC = "DT-INV-040"
 
 
 @dataclass(frozen=True, slots=True)
@@ -345,6 +353,82 @@ INVARIANTS = (
         (
             "test_transport_adapters.StateCacheTests."
             "test_latest_cache_is_bounded_copy_safe_and_head_verified",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.REVERSIBLE_LINEAGE,
+        "Every derived epistemic node supports ancestry and impact traversal",
+        "lineage-index",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_lineage_identity_contradiction_and_correction_are_reversible",
+            "test_persistence.DependencyInvalidationTests."
+            "test_v1_dependency_schema_upgrades_and_rebuilds_reverse_lineage",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.CONTRADICTION_REVIEW_EXPLICIT,
+        "Contradiction findings and human adjudication remain separate events",
+        "adjudication",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_lineage_identity_contradiction_and_correction_are_reversible",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.CORRECTION_APPEND_ONLY,
+        "Corrections preserve targets and name an existing replacement",
+        "human-review",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_lineage_identity_contradiction_and_correction_are_reversible",
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_correction_requires_existing_replacement_before_persistence",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.VALID_TIME_SELECTION,
+        "Valid-time selection does not alter recorded stream position",
+        "aggregate",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_valid_time_filters_without_changing_recorded_stream_position",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.RELATION_TOPOLOGY_TYPED,
+        "ARGOCell relations encode Point, Line, Face, Volume, and Root",
+        "contracts",
+        (
+            "test_epistemic_core.TopologyContractTests."
+            "test_argocell_relations_encode_all_five_topology_levels",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.ELICITATION_BRONZE_BOUNDARY,
+        "Elicitation answers enter encrypted Bronze without ledger disclosure",
+        "elicitation",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_gap_elicitation_writes_answer_only_to_encrypted_bronze",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.IDENTITY_LINK_PROVENANCE,
+        "Entity links require resolvable evidence provenance",
+        "identity",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_lineage_identity_contradiction_and_correction_are_reversible",
+        ),
+    ),
+    InvariantSpec(
+        InvariantId.ELICITATION_PLAN_AUTHENTIC,
+        "Elicitation plans are exactly derivable from recorded source state",
+        "elicitation",
+        (
+            "test_epistemic_core.EpistemicCoreTests."
+            "test_elicitation_rejects_forged_plan_before_bronze_write",
         ),
     ),
 )

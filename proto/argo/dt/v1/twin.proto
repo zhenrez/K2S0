@@ -15,6 +15,13 @@ service DigitalTwin {
   rpc SubscribeState(stream StateStreamRequest) returns (stream StateStreamFrame);
 
   rpc GetState(GetStateRequest) returns (TwinState);
+  rpc TraceLineage(LineageRequest) returns (LineageTrace);
+  rpc DetectContradiction(DetectContradictionRequest) returns (EventAppendReceipt);
+  rpc AdjudicateContradiction(AdjudicateContradictionRequest) returns (EventAppendReceipt);
+  rpc RecordCorrection(RecordCorrectionRequest) returns (EventAppendReceipt);
+  rpc PlanElicitation(ElicitationPlanRequest) returns (ElicitationPlan);
+  rpc RecordElicitationResponse(RecordElicitationResponseRequest)
+      returns (EventAppendReceipt);
   rpc CompileProjection(CompileProjectionRequest) returns (ProjectionResponse);
   rpc RevokeProjection(RevokeProjectionRequest) returns (ProjectionReceipt);
 
@@ -183,6 +190,119 @@ message TwinState {
   string event_hash = 3;
   repeated google.protobuf.Struct cells = 4;
   repeated string degraded_reasons = 5;
+}
+
+message LineageRequest {
+  string twin_id = 1;
+  string node_kind = 2;
+  string node_id = 3;
+  google.protobuf.Timestamp as_of_recorded_time = 4;
+}
+
+message LineageNode {
+  string kind = 1;
+  string node_id = 2;
+}
+
+message IndependenceGroup {
+  string independence_group = 1;
+  repeated string evidence_ids = 2;
+}
+
+message LineageTrace {
+  string schema_version = 1;
+  string twin_id = 2;
+  LineageNode root = 3;
+  repeated LineageNode ancestors = 4;
+  repeated LineageNode dependents = 5;
+  repeated IndependenceGroup evidence_groups = 6;
+}
+
+message DetectContradictionRequest {
+  string twin_id = 1;
+  repeated string claim_ids = 2;
+  string basis = 3;
+  int64 expected_sequence = 4;
+  string idempotency_key = 5;
+  google.protobuf.Timestamp detected_at = 6;
+}
+
+message AdjudicateContradictionRequest {
+  string twin_id = 1;
+  string contradiction_id = 2;
+  string resolution = 3;
+  repeated string preferred_claim_ids = 4;
+  string rationale = 5;
+  int64 expected_sequence = 6;
+  string idempotency_key = 7;
+  google.protobuf.Timestamp adjudicated_at = 8;
+}
+
+message RecordCorrectionRequest {
+  string twin_id = 1;
+  string target_kind = 2;
+  string target_id = 3;
+  string replacement_id = 4;
+  string rationale = 5;
+  int64 expected_sequence = 6;
+  string idempotency_key = 7;
+  google.protobuf.Timestamp corrected_at = 8;
+}
+
+message ElicitationGap {
+  string gap_id = 1;
+  string kind = 2;
+  repeated string target_ids = 3;
+  string rationale = 4;
+}
+
+message ElicitationQuestion {
+  string question_id = 1;
+  string gap_id = 2;
+  string prompt = 3;
+  string requested_relation = 4;
+}
+
+message ElicitationPlanRequest {
+  string twin_id = 1;
+  string objective = 2;
+  repeated string claim_ids = 3;
+}
+
+message ElicitationPlan {
+  string schema_version = 1;
+  string plan_id = 2;
+  string twin_id = 3;
+  int64 source_sequence = 4;
+  string objective = 5;
+  repeated ElicitationGap gaps = 6;
+  repeated ElicitationQuestion questions = 7;
+  repeated string claim_ids = 8;
+}
+
+message ElicitationResponse {
+  string response_id = 1;
+  string question_id = 2;
+  string answer = 3;
+  string sensitivity = 4;
+  google.protobuf.Timestamp answered_at = 5;
+}
+
+message RecordElicitationResponseRequest {
+  string twin_id = 1;
+  string subject_id = 2;
+  ElicitationPlan plan = 3;
+  ElicitationResponse response = 4;
+  google.protobuf.Struct rights = 5;
+  int64 expected_sequence = 6;
+  string idempotency_key = 7;
+}
+
+message EventAppendReceipt {
+  string event_id = 1;
+  string twin_id = 2;
+  int64 sequence = 3;
+  string event_hash = 4;
 }
 
 message CompileProjectionRequest {

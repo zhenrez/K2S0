@@ -3,6 +3,18 @@
 from .aggregate import TwinAggregate, TwinState
 from .bronze import AcquisitionManifest, EncryptedFileBronzeVault, StaticKeyProvider
 from .compiler import ProjectionCompiler
+from .epistemic import (
+    ElicitationPlan,
+    ElicitationQuestion,
+    ElicitationResponse,
+    EpistemicGap,
+    EpistemicNodeKind,
+    GapDirectedElicitor,
+    GapKind,
+    LineageNode,
+    LineageTrace,
+    LineageTracer,
+)
 from .event_store import SQLiteEventStore
 from .policy import DefaultDenyPolicy
 from .service import DigitalTwinService
@@ -38,8 +50,10 @@ from .types import (
     ProducerRole,
     ProjectionReceipt,
     ProjectionRequest,
+    RelationTopology,
     Sensitivity,
     SnapshotRecord,
+    TypedRelation,
 )
 
 __all__ = [
@@ -57,10 +71,20 @@ __all__ = [
     "DurableSubscription",
     "EncryptedFileBronzeVault",
     "EpistemicVector",
+    "EpistemicGap",
+    "EpistemicNodeKind",
+    "ElicitationPlan",
+    "ElicitationQuestion",
+    "ElicitationResponse",
     "EventEnvelope",
     "EventPlane",
     "IdentityKind",
     "HeartbeatFrame",
+    "GapDirectedElicitor",
+    "GapKind",
+    "LineageNode",
+    "LineageTrace",
+    "LineageTracer",
     "NatsSubjectTopology",
     "OutboxRelay",
     "ProjectionCompiler",
@@ -68,6 +92,7 @@ __all__ = [
     "ProjectionRequest",
     "ProducerRole",
     "RelayBatch",
+    "RelationTopology",
     "RotatingCursorSigner",
     "SQLiteEventStore",
     "Sensitivity",
@@ -83,4 +108,5 @@ __all__ = [
     "TelemetryStreamAck",
     "TwinAggregate",
     "TwinState",
+    "TypedRelation",
 ]

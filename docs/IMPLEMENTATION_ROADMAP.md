@@ -81,6 +81,13 @@ OTel collector, and 24-hour deployment soak remain environment gates.
 
 ### DT-3
 
+Status: complete in 0.6.0 for the embedded SQLite profile. The executable core
+now covers evidence-backed identity links, claim/contradiction/adjudication and
+correction transitions, sequence-bounded bidirectional lineage, combined
+valid/recorded-time views, typed relation topology, and encrypted Bronze-bound
+elicitation. Host HTTP/gRPC handler binding, live OIDC policy, privacy review,
+and optional Neo4j projection remain integration gates.
+
 - Implement canonical event types for evidence, identity, claims,
   contradictions, adjudication, and corrections.
 - Add lineage ancestry and independent-evidence grouping.

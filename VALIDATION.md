@@ -1,15 +1,15 @@
 # Validation record
 
-Date: 2026-09-05 UTC
+Date: 2026-09-06 UTC
 
 ## Passed
 
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant, persistence, synchronization, and adapter tests | 79 local tests passed; one generated-protobuf test skipped locally |
+| Invariant, persistence, synchronization, adapter, and epistemic tests | 88 tests passed with generated protobuf modules |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
-| JSON contracts | All seven JSON Schema files parsed successfully |
+| JSON contracts | All nine JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
 | Event integrity | Hash-chain verification passed |
 | SQLite migration | Executed successfully in an in-memory SQLite database |
@@ -28,6 +28,13 @@ Date: 2026-09-05 UTC
 | OpenTelemetry adapter | Delta export and fixed low-cardinality attribute allow-list passed with fakes |
 | Cursor rotation | Active/overlap verification, bounded key set, rotation, and retired-key revocation passed |
 | Latest-state cache | Bounded eviction, caller-copy isolation, and SQLite-head invalidation passed |
+| Epistemic transitions | Evidence-backed entity links, contradiction finding, separate human adjudication, and correction passed |
+| Reversible lineage | Sequence-bounded evidence ↔ claim ↔ contradiction/projection traversal and independence grouping passed |
+| Bitemporal selection | Valid-time filtering composes with recorded-time replay without changing stream coordinates |
+| Elicitation privacy | 1 MiB bound, encrypted Bronze answer, ledger non-disclosure, and idempotent retry passed |
+| Elicitation authenticity | Exact source-state reconstruction rejects altered and future-sequence plans before Bronze writes |
+| ARGOCell topology | Point, Line, Face, Volume, and Root typed relation serialization passed |
+| Static analysis | Ruff and strict mypy passed across 24 source modules |
 | Package metadata | setuptools 84.0.0 is available; source-layout metadata is defined |
 
 Covered tests:
@@ -82,6 +89,17 @@ Covered tests:
 - manual-ack JetStream consumption with bounded redelivery and payload-free DLQ;
 - low-cardinality OpenTelemetry delta export;
 - bounded latest-state caching with authoritative-head verification.
+- evidence-backed entity links and deactivation;
+- contradiction preservation without implicit claim-status mutation;
+- human adjudication and append-only target-to-existing-replacement correction;
+- reverse ancestry and forward impact at a recorded sequence cutoff;
+- evidence grouping by independent acquisition origin;
+- valid-time state selection without stream-position mutation;
+- all five storage-neutral ARGOCell relation topology levels;
+- deterministic gap discovery and plaintext-free elicitation ledger events;
+- bounded and idempotent encrypted Bronze response capture;
+- source-sequence and canonical-claim binding with pre-write forged-plan rejection;
+- exact claim retry after later provenance deletion without resurrecting state.
 
 ## Local smoke benchmark
 
@@ -123,15 +141,28 @@ Afterward the same 250-event profile sustained 50.15 events/second with 4.992
 ms p99 visibility. These are local regression results, not the required
 24-hour/2× deployment SLO evidence.
 
+## DT-3 lineage regression
+
+The SQLite epistemic harness seeded 1,000 independently sourced claims and one
+projection: 2,001 events and 2,000 typed lineage edges at 7,964.00 events per
+second. Across 10 iterations, reverse projection ancestry returned all 2,000
+nodes with 3.335 ms p50 and 3.460 ms p95/p99. Forward evidence impact returned
+its claim and projection with 0.018 ms p50 and 0.022 ms p95/p99.
+
+The first implementation measured approximately 398 ms p50 and 434 ms p99 for
+the same reverse traversal because SQLite rescanned all twin edges at each
+recursive frontier. Reordering the recursive CTE and requiring the dependent
+covering index reduced p99 by approximately 100×. CI now runs a 1,000-claim
+regression with a deliberately generous 250 ms p99 ceiling. These local values
+are regression evidence, not a multi-tenant production capacity claim.
+
 ## Not executable in this workspace
 
 | Check | Reason / required environment |
 | --- | --- |
-| Protobuf generation (local) | grpcio-tools is not installed locally; generated-contract execution is configured in CI |
 | OPA policy tests | OPA toolchain is not present |
 | Live NATS/gRPC/OTel/Restate interoperability | No external service topology, identity provider, or collector was supplied |
 | Host-repository integration | Host source tree was not supplied |
-| Ruff/mypy | Optional development tools are not installed |
 | Wheel build | Package command triggered a blocked dependency/network workflow; no network override was attempted |
 
 These are open verification items, not passed checks.

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argo.local/schemas/elicitation-plan-v1.schema.json",
+  "title": "Gap-directed elicitation plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "twin_id",
+    "source_sequence",
+    "objective",
+    "claim_ids",
+    "gaps",
+    "questions"
+  ],
+  "properties": {
+    "schema_version": { "const": "argo.dt.elicitation-plan/v1" },
+    "plan_id": { "type": "string", "minLength": 1 },
+    "twin_id": { "type": "string", "minLength": 1 },
+    "source_sequence": { "type": "integer", "minimum": 0 },
+    "objective": { "type": "string", "minLength": 1 },
+    "claim_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "gaps": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["gap_id", "kind", "target_ids", "rationale"],
+        "properties": {
+          "gap_id": { "type": "string", "minLength": 1 },
+          "kind": {
+            "enum": [
+              "missing_claim",
+              "independence_deficit",
+              "contested_claim",
+              "stale_lineage",
+              "unresolved_contradiction"
+            ]
+          },
+          "target_ids": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "rationale": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question_id", "gap_id", "prompt", "requested_relation"],
+        "properties": {
+          "question_id": { "type": "string", "minLength": 1 },
+          "gap_id": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "minLength": 1 },
+          "requested_relation": { "const": "supports_or_refutes" }
+        }
+      }
+    }
+  }
+}
