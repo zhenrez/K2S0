@@ -7,7 +7,7 @@ Date: 2026-09-06 UTC
 | Check | Result |
 | --- | --- |
 | Python compile | src, tests, and scripts compiled successfully under Python 3.12.13 |
-| Invariant, persistence, synchronization, adapter, and epistemic tests | 87 tests passed with generated protobuf modules |
+| Invariant, persistence, synchronization, adapter, and epistemic tests | 88 tests passed with generated protobuf modules |
 | Demo | Evidence → claim → human review → consented projection → receipt completed |
 | JSON contracts | All nine JSON Schema files parsed successfully |
 | OpenAPI syntax | YAML parsed successfully with the available YAML parser |
@@ -98,7 +98,8 @@ Covered tests:
 - all five storage-neutral ARGOCell relation topology levels;
 - deterministic gap discovery and plaintext-free elicitation ledger events;
 - bounded and idempotent encrypted Bronze response capture;
-- source-sequence and canonical-claim binding with pre-write forged-plan rejection.
+- source-sequence and canonical-claim binding with pre-write forged-plan rejection;
+- exact claim retry after later provenance deletion without resurrecting state.
 
 ## Local smoke benchmark
 

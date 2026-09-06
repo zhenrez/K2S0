@@ -343,6 +343,22 @@ class EpistemicCoreTests(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual(1, self.store.head("twin-1")[0])
 
+    async def test_claim_retry_survives_later_source_deletion(self) -> None:
+        evidence = await self.ingest(0, "source-1", "independent-1")
+        original = await self.claim(1, evidence, "The source once supported this claim")
+        await self.service.delete_evidence(
+            twin_id="twin-1",
+            evidence_id=str(evidence.payload["evidence_id"]),
+            reason="source owner requested deletion",
+            expected_sequence=2,
+            idempotency_key="delete-source-1",
+            actor=self.ingest_actor,
+        )
+
+        duplicate = await self.claim(1, evidence, "The source once supported this claim")
+        self.assertEqual(original.event_id, duplicate.event_id)
+        self.assertEqual(3, self.store.head("twin-1")[0])
+
     async def test_valid_time_filters_without_changing_recorded_stream_position(self) -> None:
         evidence = await self.ingest(
             0,

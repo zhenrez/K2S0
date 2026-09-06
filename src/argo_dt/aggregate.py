@@ -382,11 +382,20 @@ class TwinAggregate:
                 raise InvariantViolation(
                     "ContradictionDetected requires an identity and distinct claims"
                 )
+            if event.sequence == 0 and (
+                not payload.get("subject_id")
+                or not isinstance(payload.get("basis"), str)
+                or not str(payload["basis"]).strip()
+            ):
+                raise InvariantViolation(
+                    "new ContradictionDetected events require subject_id and basis"
+                )
         if event.event_type == "ContradictionAdjudicated":
             preferred = payload.get("preferred_claim_ids")
             resolution = payload.get("resolution")
             if (
                 not payload.get("contradiction_id")
+                or not payload.get("subject_id")
                 or not payload.get("reviewer_identity_id")
                 or resolution not in TwinAggregate.CONTRADICTION_RESOLUTIONS
                 or not payload.get("rationale")
@@ -404,6 +413,7 @@ class TwinAggregate:
                 "target_kind",
                 "target_id",
                 "replacement_id",
+                "reviewer_identity_id",
                 "rationale",
             }
             if any(not payload.get(field) for field in required):
@@ -570,6 +580,7 @@ class TwinAggregate:
                 raise InvariantViolation("preferred claims must belong to the contradiction")
             if payload["resolution"] in {"uphold", "corrected"} and not preferred:
                 raise InvariantViolation("this resolution requires a preferred claim")
+            cls._bind_subject(state, str(payload["subject_id"]))
             adjudication = dict(payload)
             adjudication["recorded_at"] = event.recorded_at.isoformat()
             state.adjudications[contradiction_id] = adjudication

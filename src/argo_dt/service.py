@@ -281,23 +281,11 @@ class DigitalTwinService:
         self.ownership_policy.authorize_subject(actor, subject_id)
         if not provenance:
             raise InvariantViolation("a claim cannot be proposed without provenance")
-        state = self.state(twin_id)
-        if state.subject_id is None or state.subject_id != subject_id:
-            raise InvariantViolation("claim subject does not match twin subject")
-        for ref in provenance:
-            evidence_id = str(ref.get("evidence_id", ""))
-            evidence = state.evidence.get(evidence_id)
-            if evidence is None:
-                raise InvariantViolation("claim provenance references unknown evidence")
-            if ref.get("independence_group") != evidence.get("independence_group"):
-                raise InvariantViolation(
-                    "claim provenance independence group does not match evidence"
-                )
         TwinAggregate.validate_epistemic(dict(epistemic))
         claim_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_URL,
-                f"{twin_id}:claim:{idempotency_key}",
+                canonical_json(["claim", twin_id, idempotency_key]),
             )
         )
         event = EventEnvelope.new(
@@ -307,6 +295,7 @@ class DigitalTwinService:
             producer=actor.identity_id,
             producer_role=ProducerRole.ADJUDICATION_WORKER,
             idempotency_key=idempotency_key,
+            occurred_at=valid_from,
             payload={
                 "claim_id": claim_id,
                 "subject_id": subject_id,
@@ -383,7 +372,9 @@ class DigitalTwinService:
         link_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_URL,
-                f"{twin_id}:{subject_id}:{namespace}:{entity_id}",
+                canonical_json(
+                    ["entity-link", twin_id, subject_id, namespace, entity_id]
+                ),
             )
         )
         event = EventEnvelope.new(
@@ -467,7 +458,7 @@ class DigitalTwinService:
                 "contradiction_id": str(
                     uuid.uuid5(
                         uuid.NAMESPACE_URL,
-                        f"{twin_id}:contradiction:{idempotency_key}",
+                        canonical_json(["contradiction", twin_id, idempotency_key]),
                     )
                 ),
                 "subject_id": state.subject_id,
@@ -544,7 +535,7 @@ class DigitalTwinService:
                 "correction_id": str(
                     uuid.uuid5(
                         uuid.NAMESPACE_URL,
-                        f"{twin_id}:correction:{idempotency_key}",
+                        canonical_json(["correction", twin_id, idempotency_key]),
                     )
                 ),
                 "subject_id": state.subject_id,
@@ -630,7 +621,9 @@ class DigitalTwinService:
         evidence_id = str(
             uuid.uuid5(
                 uuid.NAMESPACE_URL,
-                f"{twin_id}:{subject_id}:elicitation:{response.response_id}",
+                canonical_json(
+                    ["elicitation", twin_id, subject_id, response.response_id]
+                ),
             )
         )
         event = EventEnvelope.new(

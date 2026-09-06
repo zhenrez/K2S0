@@ -16,6 +16,8 @@
   in Bronze and writes only metadata and content hashes to the event ledger.
 - Bound elicitation plans to canonical claim sets and verify them against their
   exact recorded source state before accepting a response.
+- Made new DT-3 UUID material structurally unambiguous and preserved exact
+  claim retries after later source deletion.
 - Added lineage and elicitation JSON Schemas, REST/gRPC contracts, eight new
   invariant IDs, and end-to-end epistemic conformance tests.
 - Pinned the CI test, lint, and type-check toolchain after validating the new

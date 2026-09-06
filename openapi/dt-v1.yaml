@@ -646,9 +646,11 @@ components:
           items: { type: string, minLength: 1 }
         gaps:
           type: array
+          uniqueItems: true
           items: { $ref: "#/components/schemas/ElicitationGap" }
         questions:
           type: array
+          uniqueItems: true
           items: { $ref: "#/components/schemas/ElicitationQuestion" }
     ElicitationPlanRequest:
       type: object
@@ -674,7 +676,11 @@ components:
           properties:
             response_id: { type: string, minLength: 1 }
             question_id: { type: string, minLength: 1 }
-            answer: { type: string, minLength: 1, maxLength: 1048576 }
+            answer:
+              type: string
+              minLength: 1
+              maxLength: 1048576
+              x-maxBytes: 1048576
             sensitivity: { enum: [public, internal, confidential, restricted] }
             answered_at: { type: string, format: date-time }
         rights: { type: object }

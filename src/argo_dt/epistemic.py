@@ -15,7 +15,7 @@ from enum import StrEnum
 from .aggregate import TwinState
 from .errors import InvariantViolation
 from .ports import DependencyIndex
-from .types import Sensitivity
+from .types import Sensitivity, canonical_json
 
 MAX_ELICITATION_ANSWER_BYTES = 1024 * 1024
 
@@ -212,7 +212,7 @@ class GapDirectedElicitor:
 
     @staticmethod
     def _stable_id(prefix: str, *parts: object) -> str:
-        material = ":".join(str(part) for part in parts)
+        material = canonical_json([prefix, *parts])
         return f"{prefix}-{uuid.uuid5(uuid.NAMESPACE_URL, material)}"
 
     def plan(
@@ -234,9 +234,22 @@ class GapDirectedElicitor:
         gaps: list[EpistemicGap] = []
         questions: list[ElicitationQuestion] = []
 
-        def add_gap(kind: GapKind, targets: tuple[str, ...], rationale: str, prompt: str) -> None:
+        def add_gap(
+            kind: GapKind,
+            targets: tuple[str, ...],
+            rationale: str,
+            prompt: str,
+            *,
+            identity_parts: tuple[str, ...] = (),
+        ) -> None:
             gap_id = self._stable_id(
-                "gap", state.twin_id, state.sequence, objective, kind.value, *targets
+                "gap",
+                state.twin_id,
+                state.sequence,
+                objective,
+                kind.value,
+                *targets,
+                *identity_parts,
             )
             question_id = self._stable_id("question", gap_id)
             gaps.append(EpistemicGap(gap_id, kind, targets, rationale))
@@ -302,6 +315,7 @@ class GapDirectedElicitor:
                 "Competing claims have not been adjudicated.",
                 "What dated, firsthand, or independently sourced evidence resolves "
                 "this contradiction?",
+                identity_parts=(contradiction_id,),
             )
 
         plan_id = self._stable_id(
