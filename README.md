@@ -69,7 +69,7 @@ flowchart TB
   SRC --> BRZ --> ING --> EVT --> CLM --> TMP --> CMP
   TMP --> SIM
   CMP --> POL --> PRJ
-  CMP --> SEED
+  POL --> SEED
   SIM -. "proposal only" .-> CLM
   PRJ --> AGT
   PRJ --> TOWN

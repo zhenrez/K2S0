@@ -18,7 +18,7 @@ the artifact boundary.
 ```mermaid
 flowchart TB
   H["Human + authorized sources"] --> R["R2D2 acquisition"]
-  R --> P["Signed acquisition package"]
+  R --> P["Provenance-bound acquisition package"]
   P --> T["K2S0 validation + compilation toolchain"]
   T --> K["K2S0 DT-Seed representation"]
   K --> U["Authorized Human Digital Twin runtimes"]

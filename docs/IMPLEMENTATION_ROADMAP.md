@@ -148,7 +148,7 @@ The compiler and reader/writer are tooling around it.
 - Run performance, failover, disaster recovery, privacy, and security gates.
 - Freeze a production compatibility baseline.
 
-## 2.1 Human Digital Twin capability tracks
+## 3. Human Digital Twin capability tracks
 
 The numbered DT phases build the shared K2S0 representation/toolchain. They do
 not, by themselves, constitute a complete Human Digital Twin. The following
@@ -166,7 +166,7 @@ revocation, and qualification. Voice consent never implies health access;
 health consent never implies likeness generation; generated media and
 simulations never self-confirm as authoritative evidence.
 
-## 3. Verification matrix
+## 4. Verification matrix
 
 | Requirement | Mechanical evidence |
 | --- | --- |
@@ -183,7 +183,7 @@ simulations never self-confirm as authoritative evidence.
 | Model independence | same source fixture through two workers, canonical data unchanged |
 | Schema evolution | old event fixture replay after every release |
 
-## 4. Decision gates
+## 5. Decision gates
 
 Do not advance from reference scaffold to production until:
 
@@ -199,7 +199,7 @@ Do not advance from reference scaffold to production until:
 These gates can change adapter choices; they do not change the K2S0 semantic
 invariants.
 
-## 5. First sprint
+## 6. First sprint
 
 1. Import this folder under the host's module boundary.
 2. Run the reference tests unchanged.
