@@ -20,7 +20,8 @@ flowchart TB
   CLM --> PRJ["Purpose-bound projection"]
   EVD -. "gap" .-> ELI["Elicitation plan"]
   CTR -. "gap" .-> ELI
-  ELI --> BRZ
+  ELI --> R2["R2D2 interview/acquisition"]
+  R2 --> BRZ
 ```
 
 ## Authoritative transitions
@@ -109,6 +110,13 @@ canonical claim-ID set; it does not mutate the ledger. Response ingestion
 rebuilds the plan from that exact recorded state and rejects any altered,
 fabricated, cross-twin, or future-sequence plan before writing to Bronze.
 
+This is the trusted elicitation primitive, not the R2D2 interviewer. R2D2 is
+the active acquisition component that presents questions, manages participant
+interaction, and returns responses with acquisition context. The K2S0
+toolchain owns plan reconstruction, authorization, evidence admission, and
+representation updates. A conversational or model-generated interpretation
+cannot directly mutate the K2S0 representation.
+
 An answer is limited to 1 MiB and written through the configured `BronzeVault`
 as encrypted JSON. Only the Bronze URI, content hash, plan/question IDs,
 rights, sensitivity, valid time, and one session-level independence group enter
@@ -159,3 +167,7 @@ collector, or optional Neo4j validation. Host control/query RPC handlers remain
 an integration task. Production promotion still requires privacy review of
 elicitation prompts, recovery testing for orphaned Bronze objects, numeric
 retention requirements, and the DT-2.1 24-hour/2×-peak deployment soak.
+
+These gates limit production qualification; they do not block DT-4 reference
+development. The audited DT-3 completion evidence and DT-4 entry conditions
+are recorded in **docs/DT3_CLOSEOUT.md**.

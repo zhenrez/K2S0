@@ -12,7 +12,7 @@ architecture. Each phase adds executable capability behind stable ports.
 | DT-2 — synchronization | gRPC stream, NATS publish/replay, WebSocket cursors | p99/throughput target at 2× expected peak; bounded-memory soak |
 | DT-2.1 — transport hardening | executable adapters, key rollover, OTel, load harness | generated-contract CI + adapter invariants + deployment soak |
 | DT-3 — epistemic core | normalized events, claim/counterevidence, contradictions, review, time travel | all source→claim→evidence traces reversible; no silent overwrite |
-| DT-4 — compiler/projection | kernel artifacts, loss manifests, OPA consent and receipts | field non-interference; revocation race; generic denials |
+| DT-4 — seed compiler/projection | canonical K2S0 container, kernel artifacts, loss manifests, consent and receipts | deterministic seed build; round trip; field non-interference; revocation race; generic denials |
 | DT-5 — simulation | branch/fork, deterministic scenario inputs, evaluation, review referral | mutation test proves zero automatic evidence contamination |
 | DT-6 — ecosystem adapters | CHIP, MARC-1, Wausauk33, MorphIQ, QuestN, ContextForge | contract tests in the actual host repository |
 | DT-7 — hardening | measured hot-path optimization, HA, operations, security review | SLO soak, chaos suite, audit, recovery exercise |
@@ -81,7 +81,7 @@ OTel collector, and 24-hour deployment soak remain environment gates.
 
 ### DT-3
 
-Status: complete in 0.6.0 for the embedded SQLite profile. The executable core
+Status: closed in 0.6.1 for the embedded SQLite profile. The executable core
 now covers evidence-backed identity links, claim/contradiction/adjudication and
 correction transitions, sequence-bounded bidirectional lineage, combined
 valid/recorded-time views, typed relation topology, and encrypted Bronze-bound
@@ -96,14 +96,27 @@ and optional Neo4j projection remain integration gates.
   hard dependency on a graph database.
 - Add gap-directed elicitation as a workflow producing Bronze evidence.
 
+DT-3 supplies the trusted gap-plan and response-admission primitives used by
+R2D2. It does not implement the R2D2 conversational interviewer and does not
+claim that the runtime state engine is itself the K2S0 representation file.
+See **docs/DT3_CLOSEOUT.md** for the acceptance record.
+
 ### DT-4
 
-- Implement all kernel artifact families.
+- Define the canonical, versioned K2S0 DT-Seed manifest and container profile.
+- Compile a deterministic seed from an explicit authoritative source sequence.
+- Implement all kernel artifact families as typed seed sections.
 - Store compiler/model/prompt/tool versions and loss accounting.
 - Compile minimal input packages before external model calls.
 - Evaluate consent and policy before selecting source material.
 - Sign receipts, cache by full authorization/version key, and invalidate on
   source/policy/consent change.
+- Prove read/write round trips, deterministic rebuilds, version rejection,
+  migration behavior, integrity verification, and Bronze non-inclusion.
+
+DT-4 consumes R2D2 acquisition results only after DT-3 admission. R2D2 remains
+the interviewer/acquirer; K2S0 remains the compiled representation artifact.
+The compiler and reader/writer are tooling around it.
 
 ### DT-5
 
@@ -135,7 +148,25 @@ and optional Neo4j projection remain integration gates.
 - Run performance, failover, disaster recovery, privacy, and security gates.
 - Freeze a production compatibility baseline.
 
-## 3. Verification matrix
+## 3. Human Digital Twin capability tracks
+
+The numbered DT phases build the shared K2S0 representation/toolchain. They do
+not, by themselves, constitute a complete Human Digital Twin. The following
+parallel qualification tracks extend the representation and acquisition paths:
+
+| Track | Scope | Boundary |
+| --- | --- | --- |
+| R2D2 acquisition | Adaptive interview, authorized imports, multimodal capture, session continuity | Active acquirer; emits evidence packages, never authoritative conclusions |
+| ADT-1 | Voice evidence, voice-state representation, model references, synthesis consent and provenance | Capability profile, not necessarily a separate service |
+| VDT-1 | Visual/embodied evidence, appearance state, avatar/model references, rendering consent and provenance | Capability profile, not necessarily a separate service |
+| HDT-1 | Longitudinal health evidence/state, clinical and device interoperability, intended-use and safety controls | `HDT` means Health Digital Twin in milestone identifiers; spell out Human Digital Twin elsewhere |
+
+Each track spans acquisition, validation, K2S0 representation, authorized use,
+revocation, and qualification. Voice consent never implies health access;
+health consent never implies likeness generation; generated media and
+simulations never self-confirm as authoritative evidence.
+
+## 4. Verification matrix
 
 | Requirement | Mechanical evidence |
 | --- | --- |
@@ -152,7 +183,7 @@ and optional Neo4j projection remain integration gates.
 | Model independence | same source fixture through two workers, canonical data unchanged |
 | Schema evolution | old event fixture replay after every release |
 
-## 4. Decision gates
+## 5. Decision gates
 
 Do not advance from reference scaffold to production until:
 
@@ -168,7 +199,7 @@ Do not advance from reference scaffold to production until:
 These gates can change adapter choices; they do not change the K2S0 semantic
 invariants.
 
-## 5. First sprint
+## 6. First sprint
 
 1. Import this folder under the host's module boundary.
 2. Run the reference tests unchanged.

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.1 — 2026-09-08
+
+- Closed DT-3 with an explicit acceptance and residual-risk record.
+- Corrected the system boundary: R2D2 is the active interviewer/acquirer;
+  K2S0 is the portable, versioned DT-Seed/representation file; this repository
+  supplies the reference toolchain and runtime contracts around that file.
+- Defined DT-4 as the first canonical K2S0 seed compiler/container slice rather
+  than implying that the DT-3 state engine was already the finished Human
+  Digital Twin.
+- Reserved ADT-1, VDT-1, and HDT-1 as future voice, visual/embodied, and health
+  capability-qualification tracks. They are representation profiles and
+  end-to-end gates, not mandatory microservice boundaries.
+
 ## 0.6.0 — 2026-09-05
 
 - Added executable evidence-backed entity linking, competing-claim detection,

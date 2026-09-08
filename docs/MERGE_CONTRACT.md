@@ -2,10 +2,15 @@
 
 ## 1. Current status
 
-This repository is the standalone K2S0 implementation. At inspection, its
+This repository is the standalone reference toolchain and contract suite for
+the K2S0 DT-Seed/representation file. At inspection, its
 default branch contained only a twelve-byte README and the Boost Software
 License, so the implementation can occupy the repository root without
 displacing existing code.
+
+R2D2 is the active interviewer/acquirer. K2S0 is the representation artifact;
+the validation/compiler/runtime code in this repository is tooling around that
+artifact, not the identity or interviewer itself.
 
 This is not yet a completed merge into the broader ARGO ecosystem. No host
 package graph, deployment configuration, or CHIP/MARC/Wausauk33/MorphIQ/QuestN

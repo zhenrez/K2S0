@@ -1,5 +1,12 @@
 # Integration blueprint
 
+K2S0 is the portable DT-Seed/representation file. This repository supplies its
+reference validation, compilation, synchronization, and projection toolchain.
+R2D2 is the active interviewer/acquirer and enters through the connector and
+Bronze admission boundary. Consumers load authorized K2S0 representations or
+purpose-bound projections; they do not mutate the representation directly.
+See **docs/SYSTEM_BOUNDARY.md**.
+
 ## 1. Binding to the ARGO cascade
 
 | Ecosystem layer | Digital Twin binding | Direction | Contract |
