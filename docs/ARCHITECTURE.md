@@ -8,9 +8,16 @@ Model,” as the authoritative DT reference family. If “dt” referred to a
 separate internal prefix, that source tree was not present and remains an
 integration unknown.
 
-K2S0 is the canonical person-modeling boundary. It compiles multiple
-purpose-specific twins; it is not itself an agent, avatar, fine-tune, or
-single master persona.
+K2S0 is the portable, versioned DT-Seed/representation file. The repository
+contains the reference toolchain and runtime contracts that build and use that
+file; K2S0 is not itself an interviewer, acquirer, agent, avatar, fine-tune, or
+complete Human Digital Twin. R2D2 is the active interviewer/acquirer and emits
+provenance-bound acquisition packages for validation by the toolchain.
+
+Voice, visual/embodied, health, cognitive, behavioral, and social information
+are representation domains within the Human Digital Twin model. They do not
+imply one deployment service per domain. External inference or rendering
+engines remain replaceable adapters and never own canonical person state.
 
 ### Goals
 
@@ -39,7 +46,7 @@ flowchart TB
     HPI["Historical providers"]
     CAP["Ambient capture"]
     MSG["Communications"]
-    ASK["Interviews + corrections"]
+    ASK["R2D2 interviews + corrections"]
   end
   subgraph A["Authoritative plane"]
     BRZ["Bronze object vault"]
@@ -101,7 +108,8 @@ flowchart TB
 | ARGOCell projector | Recursive observed/desired/predicted state with typed relations | Rebuildable | twin ID |
 | Index pipeline | FTS, vector, graph, and materialized read models | No | index shard |
 | Adjudicator | Deduplication, contradiction, scope, salience, and referral proposals | Proposal only | claim/domain |
-| Elicitation engine | Gap-directed questions, sealed holdouts, burden management | Answers enter Bronze | subject |
+| R2D2 acquisition boundary | Receives authenticated gap plans; conducts interviews and returns provenance-bound responses | No | subject + session |
+| Elicitation verifier | Reconstructs source-state plans and validates response admission | Answers enter Bronze | subject |
 | Kernel compiler | KERNEL, NOW, COUNTERWEIGHTS, VOICE, PEOPLE, CAPABILITIES, DECISION MODEL, BOUNDARIES, HISTORY | Rebuildable | artifact |
 | Evaluation lab | Coverage, calibration, drift, prediction, regression, readiness | Rebuildable; results audited | suite/model |
 | Simulation engine | Branches from an explicit sequence and holds predicted state | No | branch ID |
@@ -121,12 +129,14 @@ ordering, replay, cursor, acknowledgement, subject, and projection-plane rules
 to the same service. NATS distributes already-committed events at least once;
 OpenTelemetry observes aggregate counters only.
 
-The 0.6.0 epistemic core adds evidence-backed entity links, explicit competing
+The 0.6.x epistemic core adds evidence-backed entity links, explicit competing
 claim findings and human adjudication, append-only target-to-replacement
 corrections, and bidirectional sequence-bounded lineage. Valid-time selection
 composes with recorded-time replay. Gap-directed questions are derived from
-observable deficits, and plaintext answers enter the encrypted Bronze vault;
-the ledger retains only hash/URI and plan metadata.
+observable deficits. R2D2 may present those questions, but the deterministic
+admission path—not the interviewer—authenticates the source-state plan.
+Plaintext answers enter the encrypted Bronze vault; the ledger retains only
+hash/URI and plan metadata.
 
 ~~~mermaid
 flowchart TB
@@ -163,9 +173,10 @@ Global ordering is neither required nor desirable.
 Every authoritative object carries:
 
 - **valid time**: when it describes the subject or world;
-- **recorded/system time**: when K2S0 learned or accepted it.
+- **recorded/system time**: when the toolchain admitted it to the representation.
 
-Queries may ask “what was true at T?” and “what did K2S0 know at T?” separately.
+Queries may ask “what was true at T?” and “what had been admitted to the K2S0
+representation at T?” separately.
 Current state never overwrites historical state.
 
 ### 4.3 State planes

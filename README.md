@@ -1,9 +1,17 @@
-# K2S0 Digital Twin Core
+# K2S0 DT-Seed Reference Toolchain
 
 This repository is an integration-ready Digital Twin branch for the
 MARC-0 → CHIP → Constitution → MARC-1 → Wausauk33 → MorphIQ → QuestN cascade.
-It implements the K2S0 boundary as a human epistemic operating layer rather
-than a single persona, embedding, agent, or avatar.
+K2S0 is the portable, versioned DT-Seed/representation file—not the active
+interviewer, acquirer, agent, avatar, or complete Human Digital Twin. This
+repository implements the schemas, invariant-preserving reference toolchain,
+and runtime contracts used to construct, validate, synchronize, project, and
+consume that representation.
+
+R2D2 is the active interviewer/acquirer. It supplies provenance-bound
+acquisition packages to the K2S0 toolchain; it does not become part of the
+representation and cannot declare its own interpretations authoritative. See
+[System boundary](docs/SYSTEM_BOUNDARY.md).
 
 The K2S0 repository initially contained only its README and Boost Software
 License. This package establishes the standalone implementation boundary and
@@ -33,10 +41,10 @@ rather than falsely represented as already wired host imports.
 ~~~mermaid
 flowchart TB
   subgraph Z0["Zone 0 — private evidence"]
-    SRC["HPI / Screenpipe / messages / interviews"]
+    SRC["R2D2 / connectors / imports"]
     BRZ["Encrypted bronze vault"]
   end
-  subgraph Z1["Zone 1 — authoritative K2S0"]
+  subgraph Z1["Zone 1 — authoritative build state"]
     ING["Normalize + resolve identity"]
     EVT["Hash-chained event ledger"]
     CLM["Evidence / claim / contradiction ledger"]
@@ -56,9 +64,12 @@ flowchart TB
     UI["QuestN / avatar / external services"]
   end
 
+  SEED["K2S0 DT-Seed representation"]
+
   SRC --> BRZ --> ING --> EVT --> CLM --> TMP --> CMP
   TMP --> SIM
   CMP --> POL --> PRJ
+  CMP --> SEED
   SIM -. "proposal only" .-> CLM
   PRJ --> AGT
   PRJ --> TOWN
@@ -80,7 +91,7 @@ flowchart TB
 | Durable work | Restate primary; Temporal is a supported alternative, not a second mandatory runtime |
 | Simulation | Forked namespace and event plane; no automatic promotion into evidence |
 | Disclosure | Purpose- and recipient-bound compilation before retrieval; default deny |
-| Execution | K2S0 informs actions but does not execute them; ActionEnvelope is checked downstream |
+| Execution | K2S0-derived projections may inform actions but cannot execute them; ActionEnvelope is checked downstream |
 | Hot path | Embedded Python/SQLite profile first; add native acceleration only after measurement |
 
 ## Quick verification
@@ -111,6 +122,8 @@ make grpc-generate
 - [Reference repository map](docs/REPOSITORY_PATTERN_MAP.md)
 - [Performance and security](docs/PERFORMANCE_SECURITY.md)
 - [DT-3 epistemic core](docs/EPISTEMIC_CORE.md)
+- [DT-3 closeout](docs/DT3_CLOSEOUT.md)
+- [System boundary](docs/SYSTEM_BOUNDARY.md)
 - [Implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md)
 - [gRPC contract](proto/argo/dt/v1/twin.proto)
 - [REST contract](openapi/dt-v1.yaml)

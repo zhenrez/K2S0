@@ -62,6 +62,23 @@ class ContractRegistryTests(unittest.TestCase):
         self.assertEqual(canonical_json(left), canonical_json(right))
         self.assertEqual(content_hash(left), content_hash(right))
 
+    def test_repository_boundary_distinguishes_acquirer_seed_and_toolchain(self) -> None:
+        boundary = (ROOT / "docs" / "SYSTEM_BOUNDARY.md").read_text()
+        architecture = (ROOT / "docs" / "ARCHITECTURE.md").read_text()
+        roadmap = (ROOT / "docs" / "IMPLEMENTATION_ROADMAP.md").read_text()
+
+        self.assertIn("R2D2 | Interviewer and multimodal acquirer", boundary)
+        self.assertIn(
+            "K2S0 | Portable, versioned DT-Seed/representation file",
+            boundary,
+        )
+        self.assertIn("K2S0 toolchain | Validator", boundary)
+        self.assertIn("DT-4 — seed compiler/projection", roadmap)
+        self.assertNotIn(
+            "K2S0 is the canonical person-modeling boundary",
+            architecture,
+        )
+
 
 class GoldenReplayTests(unittest.TestCase):
     def test_golden_replay_is_stable(self) -> None:

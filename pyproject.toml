@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "argo-dt"
-version = "0.6.0"
-description = "K2S0 digital-twin reference kernel and integration contracts"
+version = "0.6.1"
+description = "Reference tooling and contracts for the K2S0 DT-Seed representation"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "BSL-1.0" }
