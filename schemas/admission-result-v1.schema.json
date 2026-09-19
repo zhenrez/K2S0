@@ -1,0 +1,238 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "argo.dt.admission-result/v1",
+  "title": "AdmissionResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "request_id",
+    "admission_id",
+    "status",
+    "canonical_effects",
+    "replayed"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "argo.dt.admission-result/v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "admission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "admitted",
+        "rejected",
+        "deferred"
+      ]
+    },
+    "disposition": {
+      "enum": [
+        "effects_applied",
+        "no_op_already_canonical",
+        "no_op_redundant"
+      ]
+    },
+    "canonical_effects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/canonicalEffect"
+      }
+    },
+    "resulting_representation_state_ref": {
+      "$ref": "#/$defs/representationSnapshotRef"
+    },
+    "replayed": {
+      "type": "boolean"
+    },
+    "original_result_ref": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "admitted"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "disposition",
+          "resulting_representation_state_ref"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "disposition"
+              ]
+            },
+            {
+              "required": [
+                "resulting_representation_state_ref"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "canonical_effects": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "disposition": {
+            "const": "effects_applied"
+          }
+        },
+        "required": [
+          "disposition"
+        ]
+      },
+      "then": {
+        "properties": {
+          "canonical_effects": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "disposition": {
+            "enum": [
+              "no_op_already_canonical",
+              "no_op_redundant"
+            ]
+          }
+        },
+        "required": [
+          "disposition"
+        ]
+      },
+      "then": {
+        "properties": {
+          "canonical_effects": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "replayed": {
+            "const": true
+          }
+        },
+        "required": [
+          "replayed"
+        ]
+      },
+      "then": {
+        "required": [
+          "original_result_ref"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "original_result_ref"
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "subjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "representationSnapshotRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_ref",
+        "snapshot_id",
+        "canonical_sequence",
+        "integrity_ref"
+      ],
+      "properties": {
+        "subject_ref": {
+          "$ref": "#/$defs/subjectRef"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "integrity_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "canonicalEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect_id",
+        "effect_kind",
+        "affected_semantic_ref",
+        "source_request_id",
+        "canonical_position"
+      ],
+      "properties": {
+        "effect_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effect_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affected_semantic_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_request_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_position": {
+          "$ref": "#/$defs/representationSnapshotRef"
+        }
+      }
+    }
+  }
+}
