@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from seed_contracts import (
     AdmissionDisposition,
@@ -401,6 +401,7 @@ class LineageTraceView:
         )
 
 
+@runtime_checkable
 class K2PublicAPI(Protocol):
     async def admit_evidence(self, request: AdmitEvidenceRequest) -> AdmissionResult: ...
 
