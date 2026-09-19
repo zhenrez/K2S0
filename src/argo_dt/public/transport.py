@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
 from seed_contracts import AdmissionResult
+
 from .contracts import (
     AdmissionLookupRequest,
     AdmitEvidenceRequest,
