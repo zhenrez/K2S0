@@ -17,6 +17,9 @@ from seed_contracts import (
 )
 
 
+MAX_BOUNDED_EVIDENCE_BYTES = 64 * 1024
+
+
 class PublicErrorCode(StrEnum):
     INVALID_REQUEST = "invalid_request"
     AUTHORIZATION_DENIED = "authorization_denied"
@@ -26,12 +29,85 @@ class PublicErrorCode(StrEnum):
     TEMPORARILY_UNAVAILABLE = "temporarily_unavailable"
 
 
+def retryable_for_code(code: PublicErrorCode) -> bool:
+    return code is PublicErrorCode.TEMPORARILY_UNAVAILABLE
+
+
+@dataclass(frozen=True, slots=True)
+class PublicError:
+    """Transport-safe public failure description."""
+
+    code: PublicErrorCode
+    safe_message: str
+    retryable: bool
+
+    def __post_init__(self) -> None:
+        if not self.safe_message:
+            raise ValueError("safe_message is required")
+        if self.retryable != retryable_for_code(self.code):
+            raise ValueError("retryable must match the public error code semantics")
+
+    def to_wire(self) -> dict[str, object]:
+        return {
+            "code": self.code.value,
+            "safe_message": self.safe_message,
+            "retryable": self.retryable,
+        }
+
+    @classmethod
+    def from_wire(cls, value: Mapping[str, object]) -> PublicError:
+        code = PublicErrorCode(str(value.get("code", "")))
+        retryable = value.get("retryable")
+        if not isinstance(retryable, bool):
+            raise ValueError("retryable must be a boolean")
+        return cls(
+            code=code,
+            safe_message=str(value.get("safe_message", "")),
+            retryable=retryable,
+        )
+
+
 class K2PublicError(RuntimeError):
     """Stable public bridge failure without leaking private exception types."""
 
-    def __init__(self, code: PublicErrorCode, message: str) -> None:
+    def __init__(
+        self,
+        code: PublicErrorCode,
+        message: str,
+        *,
+        retryable: bool | None = None,
+    ) -> None:
+        expected_retryable = retryable_for_code(code)
+        actual_retryable = expected_retryable if retryable is None else retryable
+        if actual_retryable != expected_retryable:
+            raise ValueError("retryable must match the public error code semantics")
         super().__init__(message)
         self.code = code
+        self.retryable = actual_retryable
+
+    def to_public_error(self) -> PublicError:
+        return PublicError(
+            code=self.code,
+            safe_message=str(self),
+            retryable=self.retryable,
+        )
+
+    @classmethod
+    def from_public_error(cls, error: PublicError) -> K2PublicError:
+        return cls(
+            error.code,
+            error.safe_message,
+            retryable=error.retryable,
+        )
+
+
+class PublicLineageNodeKind(StrEnum):
+    EVIDENCE = "evidence"
+    REPRESENTATION_ENTITY = "representation_entity"
+    REPRESENTATION_ITEM = "representation_item"
+    CONTRADICTION = "contradiction"
+    CORRECTION = "correction"
+    PROJECTION = "projection"
 
 
 def _require(value: str, name: str) -> str:
@@ -102,14 +178,21 @@ class AuthorityContext:
 
 @dataclass(frozen=True, slots=True)
 class AdmitEvidenceRequest:
-    """Transport-independent evidence admission request for the first vertical slice."""
+    """Transport-independent bounded evidence admission.
+
+    bounded_evidence is a compatibility bridge into the existing K2
+    normalized-payload event. It is only for small structured evidence required
+    by the first vertical slice. Raw/bulk chats, files, audio, video, and source
+    archives must be preserved outside the canonical event ledger and admitted
+    later by reference through the evidence model.
+    """
 
     request_id: str
     representation_id: str
     subject_ref: SubjectRef
     source: str
     source_record_id: str
-    payload: Mapping[str, Any]
+    bounded_evidence: Mapping[str, Any]
     rights: Mapping[str, Any]
     sensitivity: str
     valid_from: datetime
@@ -133,6 +216,20 @@ class AdmitEvidenceRequest:
             _require(value, name)
         if self.based_on_sequence < 0:
             raise ValueError("based_on_sequence cannot be negative")
+        try:
+            encoded_evidence = json.dumps(
+                dict(self.bounded_evidence),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError) as exc:
+            raise ValueError("bounded_evidence must be JSON-serializable") from exc
+        if len(encoded_evidence) > MAX_BOUNDED_EVIDENCE_BYTES:
+            raise ValueError(
+                "bounded_evidence exceeds compatibility payload limit; "
+                "preserve raw/bulk content outside the canonical event ledger"
+            )
         _format_time(self.valid_from)
         if self.valid_until is not None:
             _format_time(self.valid_until)
@@ -147,7 +244,7 @@ class AdmitEvidenceRequest:
             "subject_ref": {"subject_id": self.subject_ref.subject_id},
             "source": self.source,
             "source_record_id": self.source_record_id,
-            "payload": dict(self.payload),
+            "bounded_evidence": dict(self.bounded_evidence),
             "rights": dict(self.rights),
             "sensitivity": self.sensitivity,
             "valid_from": _format_time(self.valid_from),
@@ -168,14 +265,14 @@ class AdmitEvidenceRequest:
             raise ValueError("unsupported admit-evidence request schema")
         subject_raw = value.get("subject_ref")
         authority_raw = value.get("authority")
-        payload_raw = value.get("payload")
+        evidence_raw = value.get("bounded_evidence")
         rights_raw = value.get("rights")
         if not isinstance(subject_raw, dict):
             raise ValueError("subject_ref must be an object")
         if not isinstance(authority_raw, dict):
             raise ValueError("authority must be an object")
-        if not isinstance(payload_raw, dict) or not isinstance(rights_raw, dict):
-            raise ValueError("payload and rights must be objects")
+        if not isinstance(evidence_raw, dict) or not isinstance(rights_raw, dict):
+            raise ValueError("bounded_evidence and rights must be objects")
         valid_until_raw = value.get("valid_until")
         return cls(
             request_id=str(value.get("request_id", "")),
@@ -183,7 +280,7 @@ class AdmitEvidenceRequest:
             subject_ref=SubjectRef(str(subject_raw.get("subject_id", ""))),
             source=str(value.get("source", "")),
             source_record_id=str(value.get("source_record_id", "")),
-            payload=dict(payload_raw),
+            bounded_evidence=dict(evidence_raw),
             rights=dict(rights_raw),
             sensitivity=str(value.get("sensitivity", "")),
             valid_from=_parse_time(str(value.get("valid_from", ""))),
@@ -259,14 +356,14 @@ class RepresentationQuery:
 @dataclass(frozen=True, slots=True)
 class LineageQuery:
     representation_id: str
-    node_kind: str
+    node_kind: PublicLineageNodeKind
     node_id: str
     authority: AuthorityContext
 
     def to_wire(self) -> dict[str, object]:
         return {
             "representation_id": self.representation_id,
-            "node_kind": self.node_kind,
+            "node_kind": self.node_kind.value,
             "node_id": self.node_id,
             "authority": self.authority.to_wire(),
         }
@@ -278,7 +375,7 @@ class LineageQuery:
             raise ValueError("authority must be an object")
         return cls(
             representation_id=str(value.get("representation_id", "")),
-            node_kind=str(value.get("node_kind", "")),
+            node_kind=PublicLineageNodeKind(str(value.get("node_kind", ""))),
             node_id=str(value.get("node_id", "")),
             authority=AuthorityContext.from_wire(authority),
         )
@@ -286,13 +383,15 @@ class LineageQuery:
 
 @dataclass(frozen=True, slots=True)
 class RepresentationStateView:
+    """Public representation state without exposing the private K2 claim model."""
+
     representation_id: str
     subject_ref: SubjectRef
     snapshot_ref: RepresentationSnapshotRef
     evidence_refs: tuple[str, ...]
-    claim_refs: tuple[str, ...]
-    accepted_claim_refs: tuple[str, ...]
-    contested_claim_refs: tuple[str, ...]
+    representation_item_refs: tuple[str, ...]
+    accepted_representation_item_refs: tuple[str, ...]
+    contested_representation_item_refs: tuple[str, ...]
     contradiction_refs: tuple[str, ...]
     degraded_reasons: tuple[str, ...]
 
@@ -302,9 +401,13 @@ class RepresentationStateView:
             "subject_ref": {"subject_id": self.subject_ref.subject_id},
             "snapshot_ref": _snapshot_to_wire(self.snapshot_ref),
             "evidence_refs": list(self.evidence_refs),
-            "claim_refs": list(self.claim_refs),
-            "accepted_claim_refs": list(self.accepted_claim_refs),
-            "contested_claim_refs": list(self.contested_claim_refs),
+            "representation_item_refs": list(self.representation_item_refs),
+            "accepted_representation_item_refs": list(
+                self.accepted_representation_item_refs
+            ),
+            "contested_representation_item_refs": list(
+                self.contested_representation_item_refs
+            ),
             "contradiction_refs": list(self.contradiction_refs),
             "degraded_reasons": list(self.degraded_reasons),
         }
@@ -320,9 +423,15 @@ class RepresentationStateView:
             subject_ref=SubjectRef(str(subject.get("subject_id", ""))),
             snapshot_ref=_snapshot_from_wire(snapshot),
             evidence_refs=_string_tuple(value.get("evidence_refs")),
-            claim_refs=_string_tuple(value.get("claim_refs")),
-            accepted_claim_refs=_string_tuple(value.get("accepted_claim_refs")),
-            contested_claim_refs=_string_tuple(value.get("contested_claim_refs")),
+            representation_item_refs=_string_tuple(
+                value.get("representation_item_refs")
+            ),
+            accepted_representation_item_refs=_string_tuple(
+                value.get("accepted_representation_item_refs")
+            ),
+            contested_representation_item_refs=_string_tuple(
+                value.get("contested_representation_item_refs")
+            ),
             contradiction_refs=_string_tuple(value.get("contradiction_refs")),
             degraded_reasons=_string_tuple(value.get("degraded_reasons")),
         )
@@ -355,15 +464,18 @@ class RepresentationDeficit:
 
 @dataclass(frozen=True, slots=True)
 class LineageNodeRef:
-    kind: str
+    kind: PublicLineageNodeKind
     node_id: str
 
     def to_wire(self) -> dict[str, object]:
-        return {"kind": self.kind, "node_id": self.node_id}
+        return {"kind": self.kind.value, "node_id": self.node_id}
 
     @classmethod
     def from_wire(cls, value: Mapping[str, object]) -> LineageNodeRef:
-        return cls(kind=str(value.get("kind", "")), node_id=str(value.get("node_id", "")))
+        return cls(
+            kind=PublicLineageNodeKind(str(value.get("kind", ""))),
+            node_id=str(value.get("node_id", "")),
+        )
 
 
 @dataclass(frozen=True, slots=True)
