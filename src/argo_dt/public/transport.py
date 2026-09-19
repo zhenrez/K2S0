@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from seed_contracts import AdmissionResult
+
 from .contracts import (
     AdmissionLookupRequest,
     AdmitEvidenceRequest,
@@ -13,7 +15,6 @@ from .contracts import (
     admission_result_to_wire,
     json_round_trip,
 )
-from seed_contracts import AdmissionResult
 
 
 class TransportSimulatedK2Client:
