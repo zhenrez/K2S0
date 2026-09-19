@@ -112,6 +112,18 @@ class InProcessK2Facade:
         )
         return f"representation-item:{public_id}"
 
+    @staticmethod
+    def _deficit_ref(
+        representation_id: str,
+        kind: str,
+        private_target: str,
+    ) -> str:
+        public_id = uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"k2-public:{representation_id}:deficit:{kind}:{private_target}",
+        )
+        return f"representation-deficit:{public_id}"
+
     def _private_claim_id(self, representation_id: str, public_ref: str) -> str:
         state = self._service.state(representation_id)
         for claim_id in state.claims:
@@ -338,7 +350,11 @@ class InProcessK2Facade:
         for claim_id in sorted(state.stale_claim_ids):
             deficits.append(
                 RepresentationDeficit(
-                    deficit_id=f"{request.representation_id}:stale:{claim_id}",
+                    deficit_id=self._deficit_ref(
+                        request.representation_id,
+                        "stale_representation",
+                        claim_id,
+                    ),
                     kind="stale_representation",
                     target_refs=(
                         self._representation_item_ref(
@@ -352,7 +368,11 @@ class InProcessK2Facade:
         for claim_id in sorted(state.contested_claim_ids):
             deficits.append(
                 RepresentationDeficit(
-                    deficit_id=f"{request.representation_id}:contested:{claim_id}",
+                    deficit_id=self._deficit_ref(
+                        request.representation_id,
+                        "contested_representation",
+                        claim_id,
+                    ),
                     kind="contested_representation",
                     target_refs=(
                         self._representation_item_ref(
