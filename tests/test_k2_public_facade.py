@@ -4,6 +4,7 @@ import ast
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NoReturn
 
 from argo_dt.compiler import ProjectionCompiler
 from argo_dt.event_store import SQLiteEventStore
@@ -13,7 +14,10 @@ from argo_dt.public import (
     AdmitEvidenceRequest,
     AuthorityContext,
     InProcessK2Facade,
+    K2PublicError,
     LineageQuery,
+    PublicErrorCode,
+    PublicLineageNodeKind,
     RepresentationQuery,
     TransportSimulatedK2Client,
 )
@@ -28,7 +32,7 @@ def request() -> AdmitEvidenceRequest:
         subject_ref=SubjectRef("human-1"),
         source="chat-history",
         source_record_id="message-1",
-        payload={"text": "I prefer concise technical explanations."},
+        bounded_evidence={"preference": "concise technical explanations"},
         rights={"basis": "owner_import"},
         sensitivity="internal",
         valid_from=datetime(2026, 9, 19, 10, 0, tzinfo=UTC),
@@ -63,6 +67,36 @@ def semantic_signature(result: object) -> tuple[object, ...]:
         result.resulting_representation_state_ref.subject_ref,
         result.resulting_representation_state_ref.canonical_sequence,
     )
+
+
+class AlwaysFailPublicBackend:
+    def __init__(self, error: K2PublicError) -> None:
+        self.error = error
+
+    async def _fail(self) -> NoReturn:
+        raise self.error
+
+    async def admit_evidence(self, request: AdmitEvidenceRequest) -> NoReturn:
+        del request
+        return await self._fail()
+
+    async def get_admission_result(self, request: AdmissionLookupRequest) -> NoReturn:
+        del request
+        return await self._fail()
+
+    async def read_representation_state(self, request: RepresentationQuery) -> NoReturn:
+        del request
+        return await self._fail()
+
+    async def read_representation_deficits(
+        self, request: RepresentationQuery
+    ) -> NoReturn:
+        del request
+        return await self._fail()
+
+    async def trace_lineage(self, request: LineageQuery) -> NoReturn:
+        del request
+        return await self._fail()
 
 
 class PublicFacadeTests(unittest.IsolatedAsyncioTestCase):
@@ -146,7 +180,7 @@ class PublicFacadeTests(unittest.IsolatedAsyncioTestCase):
         trace = await facade.trace_lineage(
             LineageQuery(
                 representation_id=admission_request.representation_id,
-                node_kind="evidence",
+                node_kind=PublicLineageNodeKind.EVIDENCE,
                 node_id=result.canonical_effects[0].affected_semantic_ref,
                 authority=admission_request.authority,
             )
@@ -186,6 +220,99 @@ class PublicFacadeTests(unittest.IsolatedAsyncioTestCase):
         direct_signature = await caller(direct)
         transported_signature = await caller(transported)
         self.assertEqual(direct_signature, transported_signature)
+
+    async def test_at62_public_state_does_not_expose_claim_model(self) -> None:
+        store, facade = self.make_facade()
+        self.addCleanup(store.close)
+        admission_request = request()
+        await facade.admit_evidence(admission_request)
+
+        state = await facade.read_representation_state(
+            RepresentationQuery(
+                representation_id=admission_request.representation_id,
+                authority=admission_request.authority,
+            )
+        )
+        wire = state.to_wire()
+        self.assertIn("representation_item_refs", wire)
+        self.assertIn("accepted_representation_item_refs", wire)
+        self.assertIn("contested_representation_item_refs", wire)
+        self.assertFalse(any("claim" in key for key in wire))
+        self.assertNotIn("claim", {kind.value for kind in PublicLineageNodeKind})
+
+    async def test_at63_public_errors_survive_transport_with_retry_semantics(self) -> None:
+        for code in PublicErrorCode:
+            with self.subTest(code=code):
+                backend = AlwaysFailPublicBackend(
+                    K2PublicError(code, f"safe {code.value}")
+                )
+                transported = TransportSimulatedK2Client(backend)
+                direct_error: K2PublicError | None = None
+                transported_error: K2PublicError | None = None
+                try:
+                    await backend.admit_evidence(request())
+                except K2PublicError as exc:
+                    direct_error = exc
+                try:
+                    await transported.admit_evidence(request())
+                except K2PublicError as exc:
+                    transported_error = exc
+
+                self.assertIsNotNone(direct_error)
+                self.assertIsNotNone(transported_error)
+                assert direct_error is not None
+                assert transported_error is not None
+                self.assertEqual(direct_error.code, transported_error.code)
+                self.assertEqual(direct_error.retryable, transported_error.retryable)
+                self.assertEqual(str(direct_error), str(transported_error))
+
+    async def test_operational_failure_maps_to_temporarily_unavailable(self) -> None:
+        store, facade = self.make_facade()
+        self.addCleanup(store.close)
+
+        original_head = store.head
+
+        def failing_head(twin_id: str) -> tuple[int, str]:
+            del twin_id
+            raise OSError("simulated local storage outage")
+
+        store.head = failing_head  # type: ignore[method-assign]
+        try:
+            with self.assertRaises(K2PublicError) as captured:
+                await facade.admit_evidence(request())
+        finally:
+            store.head = original_head  # type: ignore[method-assign]
+
+        self.assertEqual(
+            PublicErrorCode.TEMPORARILY_UNAVAILABLE,
+            captured.exception.code,
+        )
+        self.assertTrue(captured.exception.retryable)
+
+    def test_at64_admission_rejects_bulk_raw_compatibility_payload(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "preserve raw/bulk content outside the canonical event ledger",
+        ):
+            AdmitEvidenceRequest(
+                request_id="bulk-request",
+                representation_id="k2-human-1",
+                subject_ref=SubjectRef("human-1"),
+                source="chat-history",
+                source_record_id="export-archive",
+                bounded_evidence={"raw_archive": "x" * (64 * 1024)},
+                rights={"basis": "owner_import"},
+                sensitivity="internal",
+                valid_from=datetime(2026, 9, 19, 10, 0, tzinfo=UTC),
+                valid_until=None,
+                independence_group="chat-history:archive",
+                based_on_sequence=0,
+                authority=AuthorityContext(
+                    identity_id="r2d2-ingest",
+                    roles=("ingest_service",),
+                    subject_id="human-1",
+                ),
+            )
 
     def test_r2d2_cannot_import_private_argo_dt_modules(self) -> None:
         for path in Path("src/r2d2").rglob("*.py"):
