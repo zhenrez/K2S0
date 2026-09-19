@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "argo.dt.semantic-basis/v1",
+  "title": "SemanticBasisRef",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "semantic_basis_id",
+    "subject_ref",
+    "representation_snapshot_ref",
+    "schema_registry_snapshot_ref",
+    "construct_registry_snapshot_ref",
+    "admission_policy_ref",
+    "epistemic_policy_ref",
+    "semantic_constraint_policy_ref",
+    "other_interpretation_critical_refs",
+    "integrity_ref",
+    "sealed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "argo.dt.semantic-basis/v1"
+    },
+    "semantic_basis_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_ref": {
+      "$ref": "#/$defs/subjectRef"
+    },
+    "representation_snapshot_ref": {
+      "$ref": "#/$defs/representationSnapshotRef"
+    },
+    "schema_registry_snapshot_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "construct_registry_snapshot_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "admission_policy_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "epistemic_policy_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semantic_constraint_policy_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "other_interpretation_critical_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "x-collection-semantics": "unordered-unique-set",
+      "x-canonical-order": "lexicographic-ascending"
+    },
+    "integrity_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sealed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "subjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "representationSnapshotRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject_ref",
+        "snapshot_id",
+        "canonical_sequence",
+        "integrity_ref"
+      ],
+      "properties": {
+        "subject_ref": {
+          "$ref": "#/$defs/subjectRef"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "integrity_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

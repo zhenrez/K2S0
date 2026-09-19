@@ -48,7 +48,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["argo_dt"]
+packages = ["argo_dt", "seed_contracts", "r2d2"]
 
 [[tool.mypy.overrides]]
 module = [

@@ -99,6 +99,78 @@ def main() -> None:
     if "claim_ids" not in elicitation_schema["required"]:
         fail("elicitation plan schema does not bind selected claims")
 
+    for required_schema in {
+        "semantic-basis-v1.schema.json",
+        "admission-result-v1.schema.json",
+    }:
+        if required_schema not in schemas:
+            fail(f"missing Day-0 architecture schema {required_schema}")
+
+    semantic_basis = schemas["semantic-basis-v1.schema.json"]
+    forbidden_assessment_fields = {
+        "readiness_result",
+        "readiness_result_ref",
+        "readiness_profile",
+        "readiness_profile_ref",
+        "fidelity_result",
+        "purpose_assessment",
+    }
+    if forbidden_assessment_fields.intersection(semantic_basis["properties"]):
+        fail("SemanticBasis identity must exclude derived assessment state")
+    for required_field in {
+        "representation_snapshot_ref",
+        "schema_registry_snapshot_ref",
+        "construct_registry_snapshot_ref",
+        "admission_policy_ref",
+        "epistemic_policy_ref",
+        "semantic_constraint_policy_ref",
+    }:
+        if required_field not in semantic_basis["required"]:
+            fail(f"SemanticBasis is missing required field {required_field}")
+
+    admission_result = schemas["admission-result-v1.schema.json"]
+    if "semantic_basis_ref" in admission_result["properties"]:
+        fail("AdmissionResult must not require or expose SemanticBasis sealing")
+    for required_field in {
+        "status",
+        "canonical_effects",
+        "replayed",
+    }:
+        if required_field not in admission_result["required"]:
+            fail(f"AdmissionResult is missing required field {required_field}")
+    for required_property in {
+        "disposition",
+        "resulting_representation_state_ref",
+    }:
+        if required_property not in admission_result["properties"]:
+            fail(f"AdmissionResult is missing property {required_property}")
+
+    admission_semantic_invariants = set(
+        admission_result.get("x-semantic-invariants", [])
+    )
+    required_admission_invariants = {
+        "For every canonical_effect, source_request_id MUST equal the enclosing request_id.",
+        "For every canonical_effect, canonical_position MUST equal resulting_representation_state_ref; one admission cannot contain effects for multiple subjects or intermediate public positions.",
+        "When status is not admitted, resulting_representation_state_ref MUST be absent.",
+    }
+    if not required_admission_invariants.issubset(admission_semantic_invariants):
+        fail("AdmissionResult is missing frozen cross-field semantic invariants")
+
+    admission_status_branch = admission_result["allOf"][0]
+    prohibited_non_admitted = admission_status_branch["else"]["not"]["anyOf"]
+    if {"required": ["resulting_representation_state_ref"]} not in prohibited_non_admitted:
+        fail("non-admitted AdmissionResult must forbid resulting state")
+
+    dependency_refs = semantic_basis["properties"][
+        "other_interpretation_critical_refs"
+    ]
+    if dependency_refs.get("uniqueItems") is not True:
+        fail("SemanticBasis critical dependency refs must be unique")
+    if dependency_refs.get("x-collection-semantics") != "unordered-unique-set":
+        fail("SemanticBasis critical dependency refs lost set semantics")
+    if dependency_refs.get("x-canonical-order") != "lexicographic-ascending":
+        fail("SemanticBasis critical dependency refs lost canonical ordering")
+
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
         fail("OpenAPI version must be 3.1.0")
