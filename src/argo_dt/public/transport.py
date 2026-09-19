@@ -21,7 +21,6 @@ from .contracts import (
     json_round_trip,
 )
 
-
 T = TypeVar("T")
 
 
