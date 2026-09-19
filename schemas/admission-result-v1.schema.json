@@ -234,5 +234,10 @@
         }
       }
     }
-  }
+  },
+  "x-semantic-invariants": [
+    "For every canonical_effect, source_request_id MUST equal the enclosing request_id.",
+    "For every canonical_effect, canonical_position MUST equal resulting_representation_state_ref; one admission cannot contain effects for multiple subjects or intermediate public positions.",
+    "When status is not admitted, resulting_representation_state_ref MUST be absent."
+  ]
 }
