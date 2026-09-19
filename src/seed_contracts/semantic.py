@@ -85,6 +85,15 @@ class SemanticBasisRef:
             raise ContractViolation(
                 "semantic basis subject must match representation snapshot subject"
             )
+        canonical_refs = tuple(sorted(self.other_interpretation_critical_refs))
+        if len(canonical_refs) != len(set(canonical_refs)):
+            raise ContractViolation(
+                "other_interpretation_critical_refs must be unique"
+            )
+        if self.other_interpretation_critical_refs != canonical_refs:
+            raise ContractViolation(
+                "other_interpretation_critical_refs must use canonical sorted order"
+            )
         if self.sealed_at.tzinfo is None:
             raise ContractViolation("sealed_at must be timezone-aware")
 
@@ -106,6 +115,13 @@ class SemanticBasisRef:
             raise ContractViolation(
                 "semantic basis subject must match representation snapshot subject"
             )
+        if len(other_interpretation_critical_refs) != len(
+            set(other_interpretation_critical_refs)
+        ):
+            raise ContractViolation(
+                "other_interpretation_critical_refs must be unique"
+            )
+        canonical_refs = tuple(sorted(other_interpretation_critical_refs))
         material = {
             "subject_id": subject_ref.subject_id,
             "representation_snapshot_id": representation_snapshot_ref.snapshot_id,
@@ -116,9 +132,7 @@ class SemanticBasisRef:
             "admission_policy_ref": admission_policy_ref,
             "epistemic_policy_ref": epistemic_policy_ref,
             "semantic_constraint_policy_ref": semantic_constraint_policy_ref,
-            "other_interpretation_critical_refs": list(
-                other_interpretation_critical_refs
-            ),
+            "other_interpretation_critical_refs": list(canonical_refs),
         }
         return cls(
             semantic_basis_id=_stable_id("semantic-basis", material),
@@ -129,9 +143,7 @@ class SemanticBasisRef:
             admission_policy_ref=admission_policy_ref,
             epistemic_policy_ref=epistemic_policy_ref,
             semantic_constraint_policy_ref=semantic_constraint_policy_ref,
-            other_interpretation_critical_refs=tuple(
-                other_interpretation_critical_refs
-            ),
+            other_interpretation_critical_refs=canonical_refs,
             integrity_ref=_stable_id("semantic-basis-integrity", material),
             sealed_at=sealed_at or datetime.now(UTC),
         )
@@ -221,6 +233,31 @@ class AdmissionResult:
                 raise ContractViolation(
                     "non-admitted results cannot carry canonical effects"
                 )
+            if self.resulting_representation_state_ref is not None:
+                raise ContractViolation(
+                    "non-admitted results cannot carry a resulting canonical position"
+                )
+
+        if (
+            self.status is AdmissionStatus.ADMITTED
+            and self.disposition is AdmissionDisposition.EFFECTS_APPLIED
+        ):
+            assert self.resulting_representation_state_ref is not None
+            for effect in self.canonical_effects:
+                if effect.source_request_id != self.request_id:
+                    raise ContractViolation(
+                        "canonical effect source_request_id must match admission request_id"
+                    )
+                if effect.canonical_position.subject_ref != (
+                    self.resulting_representation_state_ref.subject_ref
+                ):
+                    raise ContractViolation(
+                        "canonical effects cannot cross subjects within one admission"
+                    )
+                if effect.canonical_position != self.resulting_representation_state_ref:
+                    raise ContractViolation(
+                        "canonical effects must reference the admission final canonical position"
+                    )
 
         if self.replayed and not self.original_result_ref:
             raise ContractViolation(
