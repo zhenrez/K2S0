@@ -99,6 +99,34 @@ A conforming implementation must prove:
    the admitted effects and their canonical position.
 ```
 
+## Day-0 contract hardening
+
+### AT-59 — non-admitted result parity
+
+`REJECTED` and `DEFERRED` results cannot carry
+`resulting_representation_state_ref`. If a future API needs to expose current
+state on rejection/deferment, it must use a semantically distinct field rather
+than overloading `resulting_*`.
+
+### AT-60 — one admission is internally coherent
+
+Every public `CanonicalEffect` in one `AdmissionResult` must:
+
+- carry the same `source_request_id` as the enclosing result;
+- belong to the same subject as the result's canonical position; and
+- reference the exact same final canonical position as the result.
+
+The exact-position rule matches the current event-store model, where one public
+atomic admission resolves to one canonical event-chain position. It also avoids
+exposing private intermediate event positions if an adapter later uses several
+internal operations.
+
+### AT-61 — interpretation-critical refs are a canonical set
+
+`other_interpretation_critical_refs` is an unordered unique semantic dependency
+set. Sealing rejects duplicates, lexicographically sorts the refs, hashes the
+canonical order, and stores that same canonical order.
+
 ## Day-0 architecture proof
 
 The first historical-AI vertical slice does not pass merely because an import
