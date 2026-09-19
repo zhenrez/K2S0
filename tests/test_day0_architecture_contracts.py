@@ -154,16 +154,15 @@ class Day0ArchitectureContractTests(unittest.TestCase):
 
     def test_at59_non_admitted_result_cannot_carry_resulting_state(self) -> None:
         for status in (AdmissionStatus.REJECTED, AdmissionStatus.DEFERRED):
-            with self.subTest(status=status):
-                with self.assertRaises(ContractViolation):
-                    AdmissionResult(
-                        request_id="request-1",
-                        admission_id=f"admission-{status.value}",
-                        status=status,
-                        disposition=None,
-                        canonical_effects=(),
-                        resulting_representation_state_ref=self.snapshot,
-                    )
+            with self.subTest(status=status), self.assertRaises(ContractViolation):
+                AdmissionResult(
+                    request_id="request-1",
+                    admission_id=f"admission-{status.value}",
+                    status=status,
+                    disposition=None,
+                    canonical_effects=(),
+                    resulting_representation_state_ref=self.snapshot,
+                )
 
     def test_at60_admission_effects_are_coherent_with_result(self) -> None:
         other_subject = SubjectRef("subject-2")
