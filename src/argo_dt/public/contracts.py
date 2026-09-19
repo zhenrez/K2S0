@@ -53,6 +53,19 @@ def _parse_time(value: str) -> datetime:
     return parsed
 
 
+def _parse_int(value: object, name: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{name} must be an integer")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise ValueError(f"{name} must be an integer") from exc
+    raise ValueError(f"{name} must be an integer")
+
+
 @dataclass(frozen=True, slots=True)
 class AuthorityContext:
     identity_id: str
@@ -178,7 +191,7 @@ class AdmitEvidenceRequest:
                 _parse_time(str(valid_until_raw)) if valid_until_raw is not None else None
             ),
             independence_group=str(value.get("independence_group", "")),
-            based_on_sequence=int(value.get("based_on_sequence", 0)),
+            based_on_sequence=_parse_int(value.get("based_on_sequence", 0), "based_on_sequence"),
             authority=AuthorityContext.from_wire(authority_raw),
             connector_version=(
                 str(value["connector_version"])
@@ -442,7 +455,10 @@ def _snapshot_from_wire(value: Mapping[str, object]) -> RepresentationSnapshotRe
     return RepresentationSnapshotRef(
         subject_ref=SubjectRef(str(subject.get("subject_id", ""))),
         snapshot_id=str(value.get("snapshot_id", "")),
-        canonical_sequence=int(value.get("canonical_sequence", 0)),
+        canonical_sequence=_parse_int(
+            value.get("canonical_sequence", 0),
+            "canonical_sequence",
+        ),
         integrity_ref=str(value.get("integrity_ref", "")),
     )
 
