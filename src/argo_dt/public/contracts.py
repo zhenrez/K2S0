@@ -16,7 +16,6 @@ from seed_contracts import (
     SubjectRef,
 )
 
-
 MAX_BOUNDED_EVIDENCE_BYTES = 64 * 1024
 
 
