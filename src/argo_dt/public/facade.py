@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 import uuid
 
 from seed_contracts import (
@@ -11,8 +12,17 @@ from seed_contracts import (
     SubjectRef,
 )
 
-from ..epistemic import EpistemicNodeKind
-from ..errors import AuthorizationDenied, ConcurrencyConflict, InvariantViolation, NotFound
+from ..epistemic import EpistemicNodeKind, LineageNode
+from ..errors import (
+    AuthorizationDenied,
+    BackpressureExceeded,
+    ConcurrencyConflict,
+    IntegrityError,
+    InvariantViolation,
+    NotFound,
+    PolicyDenied,
+    ProtocolViolation,
+)
 from ..service import DigitalTwinService
 from ..types import ActorContext, EventEnvelope, ProducerRole, Sensitivity
 from .contracts import (
@@ -23,6 +33,7 @@ from .contracts import (
     LineageQuery,
     LineageTraceView,
     PublicErrorCode,
+    PublicLineageNodeKind,
     RepresentationDeficit,
     RepresentationQuery,
     RepresentationStateView,
@@ -56,15 +67,90 @@ class InProcessK2Facade:
 
     @staticmethod
     def _translate_error(exc: Exception) -> K2PublicError:
-        if isinstance(exc, AuthorizationDenied):
-            return K2PublicError(PublicErrorCode.AUTHORIZATION_DENIED, str(exc))
+        if isinstance(exc, K2PublicError):
+            return exc
+        if isinstance(exc, (AuthorizationDenied, PolicyDenied)):
+            return K2PublicError(
+                PublicErrorCode.AUTHORIZATION_DENIED,
+                "authorization denied",
+            )
         if isinstance(exc, ConcurrencyConflict):
-            return K2PublicError(PublicErrorCode.STALE_STATE, str(exc))
+            return K2PublicError(
+                PublicErrorCode.STALE_STATE,
+                "canonical state precondition is stale",
+            )
         if isinstance(exc, NotFound):
-            return K2PublicError(PublicErrorCode.NOT_FOUND, str(exc))
-        if isinstance(exc, (InvariantViolation, ValueError)):
-            return K2PublicError(PublicErrorCode.INVALID_REQUEST, str(exc))
-        return K2PublicError(PublicErrorCode.INVARIANT_VIOLATION, str(exc))
+            return K2PublicError(
+                PublicErrorCode.NOT_FOUND,
+                "requested canonical resource was not found",
+            )
+        if isinstance(exc, (InvariantViolation, ValueError, ProtocolViolation)):
+            return K2PublicError(
+                PublicErrorCode.INVALID_REQUEST,
+                "request violates the public canonical contract",
+            )
+        if isinstance(exc, IntegrityError):
+            return K2PublicError(
+                PublicErrorCode.INVARIANT_VIOLATION,
+                "canonical integrity invariant could not be satisfied",
+            )
+        if isinstance(exc, (sqlite3.OperationalError, OSError, BackpressureExceeded)):
+            return K2PublicError(
+                PublicErrorCode.TEMPORARILY_UNAVAILABLE,
+                "canonical service is temporarily unavailable",
+            )
+        return K2PublicError(
+            PublicErrorCode.TEMPORARILY_UNAVAILABLE,
+            "canonical service is temporarily unavailable",
+        )
+
+    @staticmethod
+    def _representation_item_ref(representation_id: str, claim_id: str) -> str:
+        public_id = uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"k2-public:{representation_id}:representation-item:{claim_id}",
+        )
+        return f"representation-item:{public_id}"
+
+    def _private_claim_id(self, representation_id: str, public_ref: str) -> str:
+        state = self._service.state(representation_id)
+        for claim_id in state.claims:
+            if self._representation_item_ref(representation_id, claim_id) == public_ref:
+                return claim_id
+        raise K2PublicError(
+            PublicErrorCode.NOT_FOUND,
+            "requested public representation item was not found",
+        )
+
+    @staticmethod
+    def _private_node_kind(kind: PublicLineageNodeKind) -> EpistemicNodeKind:
+        mapping = {
+            PublicLineageNodeKind.EVIDENCE: EpistemicNodeKind.EVIDENCE,
+            PublicLineageNodeKind.REPRESENTATION_ENTITY: EpistemicNodeKind.ENTITY,
+            PublicLineageNodeKind.REPRESENTATION_ITEM: EpistemicNodeKind.CLAIM,
+            PublicLineageNodeKind.CONTRADICTION: EpistemicNodeKind.CONTRADICTION,
+            PublicLineageNodeKind.CORRECTION: EpistemicNodeKind.CORRECTION,
+            PublicLineageNodeKind.PROJECTION: EpistemicNodeKind.PROJECTION,
+        }
+        return mapping[kind]
+
+    def _public_node_ref(
+        self,
+        representation_id: str,
+        node: LineageNode,
+    ) -> LineageNodeRef:
+        mapping = {
+            EpistemicNodeKind.EVIDENCE: PublicLineageNodeKind.EVIDENCE,
+            EpistemicNodeKind.ENTITY: PublicLineageNodeKind.REPRESENTATION_ENTITY,
+            EpistemicNodeKind.CLAIM: PublicLineageNodeKind.REPRESENTATION_ITEM,
+            EpistemicNodeKind.CONTRADICTION: PublicLineageNodeKind.CONTRADICTION,
+            EpistemicNodeKind.CORRECTION: PublicLineageNodeKind.CORRECTION,
+            EpistemicNodeKind.PROJECTION: PublicLineageNodeKind.PROJECTION,
+        }
+        node_id = node.node_id
+        if node.kind is EpistemicNodeKind.CLAIM:
+            node_id = self._representation_item_ref(representation_id, node.node_id)
+        return LineageNodeRef(mapping[node.kind], node_id)
 
     def _snapshot_ref(
         self,
@@ -139,15 +225,15 @@ class InProcessK2Facade:
         )
 
     async def admit_evidence(self, request: AdmitEvidenceRequest) -> AdmissionResult:
-        actor = self._actor(request.authority)
-        head_before, _ = self._service.store.head(request.representation_id)
         try:
+            actor = self._actor(request.authority)
+            head_before, _ = self._service.store.head(request.representation_id)
             event = await self._service.ingest_evidence(
                 twin_id=request.representation_id,
                 subject_id=request.subject_ref.subject_id,
                 source=request.source,
                 source_record_id=request.source_record_id,
-                payload=request.payload,
+                payload=request.bounded_evidence,
                 rights=request.rights,
                 sensitivity=Sensitivity(request.sensitivity),
                 valid_from=request.valid_from,
@@ -218,9 +304,18 @@ class InProcessK2Facade:
             subject_ref=SubjectRef(state.subject_id),
             snapshot_ref=snapshot,
             evidence_refs=tuple(sorted(state.evidence)),
-            claim_refs=tuple(sorted(state.claims)),
-            accepted_claim_refs=tuple(sorted(state.accepted_claim_ids)),
-            contested_claim_refs=tuple(sorted(state.contested_claim_ids)),
+            representation_item_refs=tuple(
+                self._representation_item_ref(request.representation_id, claim_id)
+                for claim_id in sorted(state.claims)
+            ),
+            accepted_representation_item_refs=tuple(
+                self._representation_item_ref(request.representation_id, claim_id)
+                for claim_id in sorted(state.accepted_claim_ids)
+            ),
+            contested_representation_item_refs=tuple(
+                self._representation_item_ref(request.representation_id, claim_id)
+                for claim_id in sorted(state.contested_claim_ids)
+            ),
             contradiction_refs=tuple(sorted(state.contradictions)),
             degraded_reasons=tuple(state.degraded_reasons),
         )
@@ -245,8 +340,13 @@ class InProcessK2Facade:
                 RepresentationDeficit(
                     deficit_id=f"{request.representation_id}:stale:{claim_id}",
                     kind="stale_representation",
-                    target_refs=(claim_id,),
-                    rationale="Canonical representation depends on stale evidence.",
+                    target_refs=(
+                        self._representation_item_ref(
+                            request.representation_id,
+                            claim_id,
+                        ),
+                    ),
+                    rationale="Canonical representation item depends on stale evidence.",
                 )
             )
         for claim_id in sorted(state.contested_claim_ids):
@@ -254,8 +354,13 @@ class InProcessK2Facade:
                 RepresentationDeficit(
                     deficit_id=f"{request.representation_id}:contested:{claim_id}",
                     kind="contested_representation",
-                    target_refs=(claim_id,),
-                    rationale="Canonical representation remains contested.",
+                    target_refs=(
+                        self._representation_item_ref(
+                            request.representation_id,
+                            claim_id,
+                        ),
+                    ),
+                    rationale="Canonical representation item remains contested.",
                 )
             )
         for contradiction_id in sorted(
@@ -285,22 +390,29 @@ class InProcessK2Facade:
         try:
             state = self._service.state(request.representation_id)
             self._service.ownership_policy.authorize_subject(actor, state.subject_id)
+            private_kind = self._private_node_kind(request.node_kind)
+            private_node_id = request.node_id
+            if request.node_kind is PublicLineageNodeKind.REPRESENTATION_ITEM:
+                private_node_id = self._private_claim_id(
+                    request.representation_id,
+                    request.node_id,
+                )
             trace = self._service.trace_lineage(
                 request.representation_id,
-                node_kind=EpistemicNodeKind(request.node_kind),
-                node_id=request.node_id,
+                node_kind=private_kind,
+                node_id=private_node_id,
             )
         except Exception as exc:
             raise self._translate_error(exc) from exc
         return LineageTraceView(
             representation_id=request.representation_id,
-            root=LineageNodeRef(trace.root.kind.value, trace.root.node_id),
+            root=self._public_node_ref(request.representation_id, trace.root),
             ancestors=tuple(
-                LineageNodeRef(node.kind.value, node.node_id)
+                self._public_node_ref(request.representation_id, node)
                 for node in trace.ancestors
             ),
             dependents=tuple(
-                LineageNodeRef(node.kind.value, node.node_id)
+                self._public_node_ref(request.representation_id, node)
                 for node in trace.dependents
             ),
             evidence_by_independence_group=trace.evidence_by_independence_group,
