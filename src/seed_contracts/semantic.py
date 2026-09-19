@@ -101,7 +101,7 @@ class SemanticBasisRef:
         semantic_constraint_policy_ref: str,
         other_interpretation_critical_refs: tuple[str, ...] = (),
         sealed_at: datetime | None = None,
-    ) -> "SemanticBasisRef":
+    ) -> SemanticBasisRef:
         if representation_snapshot_ref.subject_ref != subject_ref:
             raise ContractViolation(
                 "semantic basis subject must match representation snapshot subject"
