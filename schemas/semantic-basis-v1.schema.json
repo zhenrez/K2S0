@@ -58,7 +58,9 @@
         "type": "string",
         "minLength": 1
       },
-      "uniqueItems": true
+      "uniqueItems": true,
+      "x-collection-semantics": "unordered-unique-set",
+      "x-canonical-order": "lexicographic-ascending"
     },
     "integrity_ref": {
       "type": "string",
