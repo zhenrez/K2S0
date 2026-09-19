@@ -62,7 +62,7 @@ class InProcessK2Facade:
             return K2PublicError(PublicErrorCode.STALE_STATE, str(exc))
         if isinstance(exc, NotFound):
             return K2PublicError(PublicErrorCode.NOT_FOUND, str(exc))
-        if isinstance(exc, InvariantViolation):
+        if isinstance(exc, (InvariantViolation, ValueError)):
             return K2PublicError(PublicErrorCode.INVALID_REQUEST, str(exc))
         return K2PublicError(PublicErrorCode.INVARIANT_VIOLATION, str(exc))
 
