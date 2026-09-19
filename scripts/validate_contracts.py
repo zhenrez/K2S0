@@ -99,6 +99,52 @@ def main() -> None:
     if "claim_ids" not in elicitation_schema["required"]:
         fail("elicitation plan schema does not bind selected claims")
 
+    for required_schema in {
+        "semantic-basis-v1.schema.json",
+        "admission-result-v1.schema.json",
+    }:
+        if required_schema not in schemas:
+            fail(f"missing Day-0 architecture schema {required_schema}")
+
+    semantic_basis = schemas["semantic-basis-v1.schema.json"]
+    forbidden_assessment_fields = {
+        "readiness_result",
+        "readiness_result_ref",
+        "readiness_profile",
+        "readiness_profile_ref",
+        "fidelity_result",
+        "purpose_assessment",
+    }
+    if forbidden_assessment_fields.intersection(semantic_basis["properties"]):
+        fail("SemanticBasis identity must exclude derived assessment state")
+    for required_field in {
+        "representation_snapshot_ref",
+        "schema_registry_snapshot_ref",
+        "construct_registry_snapshot_ref",
+        "admission_policy_ref",
+        "epistemic_policy_ref",
+        "semantic_constraint_policy_ref",
+    }:
+        if required_field not in semantic_basis["required"]:
+            fail(f"SemanticBasis is missing required field {required_field}")
+
+    admission_result = schemas["admission-result-v1.schema.json"]
+    if "semantic_basis_ref" in admission_result["properties"]:
+        fail("AdmissionResult must not require or expose SemanticBasis sealing")
+    for required_field in {
+        "status",
+        "canonical_effects",
+        "replayed",
+    }:
+        if required_field not in admission_result["required"]:
+            fail(f"AdmissionResult is missing required field {required_field}")
+    for required_property in {
+        "disposition",
+        "resulting_representation_state_ref",
+    }:
+        if required_property not in admission_result["properties"]:
+            fail(f"AdmissionResult is missing property {required_property}")
+
     openapi = yaml.safe_load((ROOT / "openapi" / "dt-v1.yaml").read_text())
     if openapi.get("openapi") != "3.1.0":
         fail("OpenAPI version must be 3.1.0")
