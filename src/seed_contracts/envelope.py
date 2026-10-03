@@ -88,7 +88,10 @@ class SeedEnvelope:
         object.__setattr__(
             self,
             "acquisition_info",
-            tuple(\n                _require_json_object(item, "acquisition_info item")\n                for item in self.acquisition_info\n            ),
+            tuple(
+                _require_json_object(item, "acquisition_info item")
+                for item in self.acquisition_info
+            ),
         )
         object.__setattr__(
             self,
