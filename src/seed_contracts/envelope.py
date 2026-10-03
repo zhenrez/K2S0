@@ -177,7 +177,10 @@ def read_seed_envelope(payload: bytes | bytearray | memoryview) -> SeedEnvelope:
     snapshot = RepresentationSnapshotRef(
         subject_ref=snapshot_subject,
         snapshot_id=str(snapshot_wire.get("snapshot_id", "")),
-        canonical_sequence=_require_int(snapshot_wire.get("canonical_sequence"), "canonical_sequence"),
+        canonical_sequence=_require_int(
+            snapshot_wire.get("canonical_sequence"),
+            "canonical_sequence",
+        ),
         integrity_ref=str(snapshot_wire.get("integrity_ref", "")),
     )
 
