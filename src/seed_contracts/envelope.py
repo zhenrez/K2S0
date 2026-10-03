@@ -20,6 +20,12 @@ def _canonical_json(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _require_int(value: Any, name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{name} must be an integer")
+    return value
+
+
 def _require_json_object(value: Mapping[str, Any], name: str) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise ValueError(f"{name} must be an object")
@@ -171,7 +177,7 @@ def read_seed_envelope(payload: bytes | bytearray | memoryview) -> SeedEnvelope:
     snapshot = RepresentationSnapshotRef(
         subject_ref=snapshot_subject,
         snapshot_id=str(snapshot_wire.get("snapshot_id", "")),
-        canonical_sequence=int(snapshot_wire.get("canonical_sequence")),
+        canonical_sequence=_require_int(snapshot_wire.get("canonical_sequence"), "canonical_sequence"),
         integrity_ref=str(snapshot_wire.get("integrity_ref", "")),
     )
 
@@ -191,7 +197,7 @@ def read_seed_envelope(payload: bytes | bytearray | memoryview) -> SeedEnvelope:
     envelope = SeedEnvelope(
         subject_ref=subject,
         representation_snapshot_ref=snapshot,
-        source_sequence=int(wire.get("source_sequence")),
+        source_sequence=_require_int(wire.get("source_sequence"), "source_sequence"),
         compiler_ref=str(wire.get("compiler_ref", "")),
         sections=tuple(
             SeedSection(name=str(item.get("name", "")), payload=item.get("payload", {}))
