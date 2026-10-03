@@ -93,7 +93,10 @@ class SeedEnvelope:
         object.__setattr__(
             self,
             "loss_manifest",
-            tuple(_require_json_object(item, "loss_manifest item") for item in self.loss_manifest),
+            tuple(
+                _require_json_object(item, "loss_manifest item")
+                for item in self.loss_manifest
+            ),
         )
 
 
