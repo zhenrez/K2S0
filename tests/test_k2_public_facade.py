@@ -22,7 +22,12 @@ from argo_dt.public import (
     TransportSimulatedK2Client,
 )
 from argo_dt.service import DigitalTwinService
-from seed_contracts import AdmissionDisposition, AdmissionStatus, SubjectRef
+from seed_contracts import (
+    AdmissionDisposition,
+    AdmissionStatus,
+    RepresentationSnapshotRef,
+    SubjectRef,
+)
 
 
 def request() -> AdmitEvidenceRequest:
@@ -288,6 +293,41 @@ class PublicFacadeTests(unittest.IsolatedAsyncioTestCase):
             captured.exception.code,
         )
         self.assertTrue(captured.exception.retryable)
+
+    def test_sequence_contracts_reject_boolean_values(self) -> None:
+        subject = SubjectRef("human-1")
+        with self.assertRaisesRegex(
+            ValueError, "canonical_sequence must be an integer"
+        ):
+            RepresentationSnapshotRef(
+                subject_ref=subject,
+                snapshot_id="representation-bool",
+                canonical_sequence=True,
+                integrity_ref="sha256:representation-bool",
+            )
+
+        baseline = request()
+        with self.assertRaisesRegex(
+            ValueError, "based_on_sequence must be an integer"
+        ):
+            AdmitEvidenceRequest(
+                request_id=baseline.request_id,
+                representation_id=baseline.representation_id,
+                subject_ref=baseline.subject_ref,
+                source=baseline.source,
+                source_record_id=baseline.source_record_id,
+                bounded_evidence=baseline.bounded_evidence,
+                rights=baseline.rights,
+                sensitivity=baseline.sensitivity,
+                valid_from=baseline.valid_from,
+                valid_until=baseline.valid_until,
+                independence_group=baseline.independence_group,
+                based_on_sequence=True,
+                authority=baseline.authority,
+                connector_version=baseline.connector_version,
+                media_type=baseline.media_type,
+                source_content_hash=baseline.source_content_hash,
+            )
 
     def test_at64_admission_rejects_bulk_raw_compatibility_payload(self) -> None:
         with self.assertRaisesRegex(
