@@ -73,6 +73,20 @@ class SeedEnvelopeTests(unittest.TestCase):
         self.assertEqual(wire["source_sequence"], 17)
         self.assertTrue(wire["integrity_ref"].startswith("seed-envelope:sha256:"))
 
+    def test_constructor_rejects_boolean_source_sequence(self) -> None:
+        fixture = self.fixture()
+        with self.assertRaisesRegex(ValueError, "source_sequence must be an integer"):
+            SeedEnvelope(
+                subject_ref=fixture.subject_ref,
+                representation_snapshot_ref=fixture.representation_snapshot_ref,
+                source_sequence=True,
+                compiler_ref=fixture.compiler_ref,
+                sections=fixture.sections,
+                acquisition_info=fixture.acquisition_info,
+                extension_blocks=fixture.extension_blocks,
+                loss_manifest=fixture.loss_manifest,
+            )
+
     def test_unknown_extension_and_acquisition_info_round_trip_without_interpretation(self) -> None:
         payload = compile_seed_envelope(self.fixture())
         reopened = read_seed_envelope(payload)
