@@ -1,0 +1,108 @@
+{
+  "schema_version": "k2s0.usable-v0.runtime/v1",
+  "updated_at": "2026-10-07T22:28:46Z",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "control_branch": "runtime/k2s0-usable-v0-control",
+    "source_branch": "dt/4-seed-compiler-projection",
+    "pr": 10,
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "ci_run_id": 37682402540,
+    "ci_run_number": 72,
+    "ci_conclusion": "failure"
+  },
+  "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
+  "active_packet": {
+    "id": "SEQ-WP-002",
+    "phase": "red_verified",
+    "objective": "Enforce strict integer domains for RepresentationSnapshotRef.canonical_sequence and AdmitEvidenceRequest.based_on_sequence",
+    "owned_paths": [
+      "src/seed_contracts/semantic.py",
+      "src/argo_dt/public/contracts.py",
+      "tests/test_k2_public_facade.py"
+    ],
+    "dependencies": [
+      "DT4-WP-001 SeedEnvelope.source_sequence fix green under CI run #70, but independent review still pending"
+    ],
+    "invariants": [
+      "Python bool is not a valid sequence int",
+      "No public wire schema changes",
+      "R2D2 never mutates dt_*",
+      "Keep existing nonnegative requirements"
+    ],
+    "acceptance": [
+      "Existing identical test test_sequence_contracts_reject_boolean_values red with canonical_sequence ValueError not raised",
+      "After fixing canonical_sequence alone identical test fails at based_on_sequence assertion",
+      "After fixing both, identical test is green and full CI green for exact new head",
+      "Fresh independent read-only review verifies both changes and no authority regression"
+    ],
+    "exact_checks": [
+      "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "make contracts",
+      "make lint",
+      "make typecheck",
+      "python -m compileall -q src tests scripts"
+    ],
+    "permissions": "Reversible writes only on PR #10 branch; no merge without explicit gates",
+    "stop_conditions": [
+      "Exact-head CI failure unrelated to patch",
+      "Unable to mutate source safely; prepare patch and proceed with unrelated tracer fixture/contract"
+    ],
+    "next_action": "Apply canonical_sequence strict-int guard; verify subsequent RED for based_on_sequence using same test, then fix based_on_sequence and run exact-head CI"
+  },
+  "evidence": [
+    {
+      "type": "ci",
+      "status": "confirmed",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "run_id": 37682402540,
+      "run_number": 72,
+      "conclusion": "failure",
+      "observation": "test_sequence_contracts_reject_boolean_values fails because canonical_sequence=True did not raise ValueError"
+    },
+    {
+      "type": "source",
+      "status": "confirmed",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "path": "src/argo_dt/public/contracts.py",
+      "observation": "based_on_sequence constructor checks < 0 while from_wire uses bool-rejecting _parse_int"
+    },
+    {
+      "type": "ci",
+      "status": "historical_confirmed",
+      "sha": "a3c3a28c5f01d26175a1e26654759f6453a9d964",
+      "run_id": 37652121560,
+      "run_number": 70,
+      "conclusion": "success",
+      "observation": "SeedEnvelope.source_sequence fix green; separate independent review still outstanding"
+    }
+  ],
+  "pipeline": {
+    "golden_fixture": "not_implemented",
+    "A_persistence": "not_reconciled",
+    "B_evidence": "not_reconciled",
+    "C_parser": "not_reconciled",
+    "end_to_end_trace": "not_verified"
+  },
+  "metrics": {
+    "product_completion_percent": null,
+    "verified_implementation_percent": null,
+    "reason": "WBS baseline not independently established",
+    "tracer_complete": false
+  },
+  "plugin_availability": {
+    "github": "available",
+    "skillquiver": "not exposed by available tools",
+    "compound_engineering": "not exposed by available tools",
+    "proofline": "not exposed by available tools",
+    "AI_DevKit": "explicitly prohibited"
+  },
+  "blockers": [],
+  "next_packets": [
+    {
+      "id": "TRACER-WP-001",
+      "objective": "sanitized historical-source fixture and tracer contract",
+      "status": "ready_nonoverlap"
+    }
+  ]
+}
