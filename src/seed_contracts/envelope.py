@@ -84,7 +84,8 @@ class SeedEnvelope:
     def __post_init__(self) -> None:
         if self.representation_snapshot_ref.subject_ref != self.subject_ref:
             raise ValueError("representation snapshot subject must match envelope subject")
-        if self.source_sequence < 0:
+        source_sequence = _require_int(self.source_sequence, "source_sequence")
+        if source_sequence < 0:
             raise ValueError("source_sequence cannot be negative")
         if not self.compiler_ref.strip():
             raise ValueError("compiler_ref is required")
