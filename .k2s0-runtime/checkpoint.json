@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-07T22:28:46Z",
+  "updated_at": "2026-10-08T02:33:00Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -48,7 +48,7 @@
       "Exact-head CI failure unrelated to patch",
       "Unable to mutate source safely; prepare patch and proceed with unrelated tracer fixture/contract"
     ],
-    "next_action": "Apply canonical_sequence strict-int guard; verify subsequent RED for based_on_sequence using same test, then fix based_on_sequence and run exact-head CI"
+    "next_action": "Strict-int PR #10 repair blocked at source write; next authorized mutation when write policy permits is canonical_sequence guard followed by based_on_sequence RED->GREEN and exact-head CI."
   },
   "evidence": [
     {
@@ -75,13 +75,23 @@
       "run_number": 70,
       "conclusion": "success",
       "observation": "SeedEnvelope.source_sequence fix green; separate independent review still outstanding"
+    },
+    {
+      "type": "local_handoff",
+      "status": "local_claimed_not_independently_verified",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "local_test_count": 30,
+      "result": "PASS",
+      "artifact": "K2S0-usable-v0-run13-handoff.zip",
+      "remote_record": ".k2s0-runtime/evidence/20261008-run13.json",
+      "new_work": "public-only stage2 admission adapter, public lookup, negative auth/correlation tests"
     }
   ],
   "pipeline": {
-    "golden_fixture": "not_implemented",
+    "golden_fixture": "synthetic_locally_tested_not_repo",
     "A_persistence": "not_reconciled",
-    "B_evidence": "not_reconciled",
-    "C_parser": "not_reconciled",
+    "B_evidence": "local_claimed_public_admission_adapter_no_native_K2",
+    "C_parser": "local_claimed_30_test_accumulation_not_repo",
     "end_to_end_trace": "not_verified"
   },
   "metrics": {
@@ -97,12 +107,26 @@
     "proofline": "not exposed by available tools",
     "AI_DevKit": "explicitly prohibited"
   },
-  "blockers": [],
+  "blockers": [
+    "PR #10 source mutation attempt blocked by tool safety checks; do not retry unchanged call without changed cause",
+    "Stage-2 local adapter not in repo; no real public K2 execution or independent verification"
+  ],
   "next_packets": [
     {
-      "id": "TRACER-WP-001",
-      "objective": "sanitized historical-source fixture and tracer contract",
-      "status": "ready_nonoverlap"
+      "id": "SEQ-WP-002",
+      "status": "blocked_by_source_write_safety",
+      "objective": "strict integer bool domains in canonical_sequence and based_on_sequence"
+    },
+    {
+      "id": "TRACER-R2-PUB-002",
+      "status": "locally_claimed",
+      "objective": "integrate stage2 adapter with native public client and SQLite readback (not yet verified)"
+    },
+    {
+      "id": "TRACER-B-001",
+      "status": "ready_nonoverlap",
+      "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
-  ]
+  ],
+  "control_head_sha": "137da96428e742fdb34c0061adc818fb54a4f04b"
 }
