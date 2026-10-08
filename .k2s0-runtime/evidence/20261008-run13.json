@@ -1,0 +1,30 @@
+{
+  "schema_version": "k2s0.runtime.evidence/v1",
+  "observed_at_utc": "2026-10-08T02:33:00Z",
+  "repo": "zhenrez/K2S0",
+  "source_pr": 10,
+  "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "ci": {
+    "run_id": 37682402540,
+    "run_number": 72,
+    "conclusion": "failure",
+    "cause": "canonical_sequence boolean regression RED"
+  },
+  "control_start_sha": "e76aa598c79f8427ce77fd83cfbe7e3899908bfd",
+  "packet": "TRACER-R2-PUB-002",
+  "local": {
+    "new_paths": [
+      "tracer/src/r2d2/public_submission.py",
+      "tracer/tests/test_public_submission.py",
+      "tracer/tests/test_stage2_public_boundary.py"
+    ],
+    "unit_tests": 30,
+    "result": "PASS",
+    "compileall": "PASS",
+    "native_k2_integration": false,
+    "independent_review": false
+  },
+  "source_write": "blocked_by_safety_checks",
+  "acceptance_gate": "open",
+  "next": "Resolve PR #10 strict-int regressions RED-GREEN; integrate locally tested stage-2 adapter with actual K2 public parser/admission/lookup and SQLite restart; K2-only adjudication and human review."
+}
