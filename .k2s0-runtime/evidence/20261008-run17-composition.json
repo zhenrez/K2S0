@@ -1,0 +1,36 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "packet_id": "TRACER-COMPOSE-001",
+  "time_utc": "2026-10-08T06:01:00Z",
+  "repo": "zhenrez/K2S0",
+  "pr": 10,
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_ci_run_id": 37682402540,
+  "source_ci_conclusion": "failure",
+  "control_head_observed_before_packet": "bf8b0a778f1ec57c4b55820f9834ffe5fbb95faf",
+  "baseline": "run15 mounted bundle: 56 locally passing tests; GitHub run16 newer evidence claimed 67/67 local tests but run16 source not retrieved",
+  "change": "One complete synthetic composition test for sanitized historical source -> R2 reviewed evidence -> mocked public admission -> K2-owned adjudication -> independent human review -> selective SeedEnvelope -> stdlib consumer query",
+  "owned_path": "tracer/tests/test_synthetic_full_journey.py",
+  "test_sha256": "326a6aee5bbab45238d2c33564db18779080ae5383d3e1bcec6641ee3b8d347c",
+  "checks": [
+    {
+      "command": "cd tracer && PYTHONPATH=src:tests python -m unittest discover -s tests -v",
+      "observed": "57 tests OK, exit 0"
+    },
+    {
+      "command": "cd tracer && python -m compileall -q src tests",
+      "observed": "exit 0"
+    }
+  ],
+  "status": "LOCAL_INTEGRATED_SIMULATION_NOT_NATIVE_K2_NOT_INDEPENDENTLY_VERIFIED",
+  "independent_review": "PENDING",
+  "repo_source_mutation": false,
+  "tracer_gate": "0/1 independently verified",
+  "critical_uncertainty": [
+    "No executable canonical GitHub source in local environment; native SQLite facade/test still NOT_RUN",
+    "K2 public missing_representation only for empty claims; required-domain deficits not supplied",
+    "host authentication/consent not independently demonstrated",
+    "PR #10 strict-int RED remains"
+  ],
+  "artifact": "K2S0-usable-v0-composition-handoff.zip"
+}
