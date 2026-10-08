@@ -1,0 +1,29 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "packet_id": "TRACER-Q-001",
+  "supersedes": ".k2s0-runtime/evidence/20261008-run16-question.json",
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "status": "local_claimed_not_independently_verified",
+  "result": {
+    "unit_tests": "67/67 PASS",
+    "compileall": "PASS",
+    "private_K2_import_guard": "PASS",
+    "native_K2": "NOT_RUN",
+    "independent_review": "PENDING",
+    "complete_verified_tracer": "0/1"
+  },
+  "concurrency_regression": "K2 public state may change between deficit and state reads; detect changed snapshot/sequence/integrity and fail closed (local RED->GREEN)",
+  "changed_file_sha256": {
+    "tracer/src/r2d2/question_answer.py": "c4bb76034e68be7d2ee2c52c190957bc30d4fe3c4fbbd45a5b7c89c0ef51f397",
+    "tracer/src/r2d2/admission_handoff.py": "d28c7df27e75aa415b0fccb3228cec3a91852f642feb4dfcc68cc8c7ac328558",
+    "tracer/tests/test_question_answer_loop.py": "6bc753718a2b342c9a9c9db123577b6bb20ab91487f0579ea5252370dd61024b"
+  },
+  "remaining_blockers": [
+    "PR10 strict-int RED",
+    "K2 missing required-domain deficit after partial representation",
+    "native K2 integration",
+    "host authentication and disclosure consent"
+  ],
+  "checkpoint_manifest_update": "BLOCKED; prior remote checkpoint remains stale",
+  "artifact": "K2S0-usable-v0-run16-handoff.zip"
+}
