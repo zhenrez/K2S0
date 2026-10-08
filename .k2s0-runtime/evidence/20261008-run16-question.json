@@ -1,0 +1,40 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "packet_id": "TRACER-Q-001",
+  "evidence_class": "local_claim_not_independently_verified",
+  "authority": {
+    "repo": "zhenrez/K2S0",
+    "pr": 10,
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure",
+    "control_checkpoint_sha": "51eb05933d82caa258266517d9921e8bb9edacd7"
+  },
+  "checks": {
+    "unittest": "66/66 PASS locally",
+    "compileall": "PASS",
+    "private_k2_import_policy": "PASS",
+    "isolated_synthetic_seed_consumer": "PASS",
+    "native_repo_integration": "NOT_RUN",
+    "independent_review": "NOT_OBTAINED"
+  },
+  "changed_paths": [
+    "tracer/src/r2d2/question_answer.py",
+    "tracer/src/r2d2/admission_handoff.py",
+    "tracer/tests/test_question_answer_loop.py"
+  ],
+  "shas256": {
+    "tracer/src/r2d2/question_answer.py": "9bc877ff079398a3a950adc2e295f8da16bdef8ae164454dc839b89cdc0c0193",
+    "tracer/src/r2d2/admission_handoff.py": "d28c7df27e75aa415b0fccb3228cec3a91852f642feb4dfcc68cc8c7ac328558",
+    "tracer/tests/test_question_answer_loop.py": "d12a7e311ddfde06a370c28c413335830b31286e8de5d4784cba0dfa7201a9ed"
+  },
+  "result": "Local question-answer evidence intake and mock public admission implemented; remote product branch unchanged",
+  "critical_blocker": "K2 public missing_representation is emitted only when state.claims is empty, so required-domain deficits after partial representation are not exposed",
+  "artifact": "K2S0-usable-v0-run16-handoff.zip",
+  "next_actions": [
+    "repair PR #10 strict-int defect after cause of safety block changes",
+    "land/execute native public admission/SQLite restart integration",
+    "establish K2-owned required-domain deficit semantics under authority decision",
+    "independent review and full tracer CI"
+  ]
+}
