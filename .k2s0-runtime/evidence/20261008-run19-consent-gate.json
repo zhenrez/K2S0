@@ -1,0 +1,49 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "time_utc": "2026-10-08T10:08:05Z",
+  "packet_id": "TRACER-CONSENT-GATE-001",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "pr": 10,
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure",
+    "control_head_observed": "5422e64ffa7d74f28fc05fd7e60f0c3145e81d7e"
+  },
+  "work": {
+    "status": "LOCAL_VERIFIED_COMPONENT_NOT_NATIVE_NOT_INDEPENDENT",
+    "scope": "Additive K2-host disclosure orchestration gate; not authentication or an authoritative consent ledger",
+    "baseline": "run15 worktree with run18 regression patches, run16/run17 source NOT_RETRIEVED",
+    "new_paths": [
+      "tracer/src/argo_dt/usable_v0_disclosure_gateway.py",
+      "tracer/tests/test_disclosure_gateway.py"
+    ],
+    "checks": [
+      {
+        "cmd": "PYTHONPATH=src:tests python -m unittest discover -s tests -v",
+        "result": "70/70 PASS; 11 new gateway tests; includes direct-projector negative control",
+        "evidence": "run19-tests.log"
+      },
+      {
+        "cmd": "python -m compileall -q src tests",
+        "result": "PASS"
+      }
+    ],
+    "path_sha256": {
+      "tracer/src/argo_dt/usable_v0_disclosure_gateway.py": "0de952681d149e9e9279956fb40563f7cd20b01e4847e5ad4020bd06a20888b5",
+      "tracer/tests/test_disclosure_gateway.py": "282efee36a6ecb473e4c755c44ed9c60539c3db374698350e5b069761b144ee6"
+    }
+  },
+  "invariants": [
+    "R2D2 never invokes K2-internal projection/gateway",
+    "Policy must come from trusted host; caller-generated DisclosureDecision never proves consent",
+    "Consent decision subject/recipient/purpose and requested kinds are bound and scope-narrowed",
+    "Actual host authentication/consent persistence/revocation atomicity remain NOT VERIFIED"
+  ],
+  "independent_review": "NOT_OBTAINED",
+  "product_completion_percent": null,
+  "verified_implementation_percent": null,
+  "tracer_gate": "0/1",
+  "production_source_write": false,
+  "next_action": "Reconcile newer run16/run17 source, integrate independent gateway and prepared native test in authorized tracer branch; complete PR10 strict-int RED->GREEN and native/consent evidence before usable gate."
+}
