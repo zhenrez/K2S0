@@ -1,0 +1,72 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at_utc": "2026-10-10T19:12:29.697Z",
+  "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "pr": 10,
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure",
+    "control_expected_head": "ce3f088eda7644ac84332a3733bb35ef367ac00d",
+    "control_expected_tree": "c5765cd9f80e18819371ca9f19049a864d7a8ee5"
+  },
+  "work": {
+    "packages": [
+      "P0-01",
+      "P1-03",
+      "P2-03"
+    ],
+    "status": "LOCAL_PATCH_CANDIDATE_ONLY",
+    "title": "Strict integer regressions and bounded-evidence nested-alias guard",
+    "original_blob_contracts": "ade36e6bb042da457f78a4b44d40507a189c3089",
+    "original_blob_semantic": "6ca48760461236a59d4d064170f53009141faaa3",
+    "result_blob_contracts": "ed5029b7f5bc3f8a6743c8405986b15276232afc",
+    "result_blob_semantic": "27a344e3480f5a9991fe08b1caf1b9932250056c",
+    "combined_patch_sha256": "e1e31bbead4c9a4c899e77b91282b8eda8f7c73eb8600f8f911181068958eb39",
+    "artifact_sha256": "8d5a60be7e8c77abb55723dc9c692c806c41a2eb3c89f7c2f01112689a94e290",
+    "artifact": "K2S0-usable-v0-run37-admission-boundary-redgreen.zip"
+  },
+  "native_checks": [
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "source": "partial exact-Git-blob canonical modules PR10 unmodified + 2 new test modules",
+      "exit_code": 1,
+      "result": "21 collected, 11 failures and 4 errors",
+      "log_sha256": "a3c6c8caa0986d9f9717e757bf24976a8112fae7e1ed917e7f0cec7f979dd01e"
+    },
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "source": "identical partial tree after 2-file candidate patch",
+      "exit_code": 0,
+      "result": "21 tests passed; 0 skips",
+      "log_sha256": "2656911360025108deaceb57416be5130d765c937a1a0fa51efe2bbb8e28825d"
+    },
+    {
+      "cmd": "python -m compileall -q src tests",
+      "exit_code": 0
+    }
+  ],
+  "runtime": {
+    "python": "3.13.5",
+    "python312_available": false,
+    "complete_checkout": false,
+    "independent_review": false
+  },
+  "risks": [
+    "No full canonical native integration",
+    "Frozen JSON dict/list subclasses require native service serialization/compatibility tests",
+    "Caller-authority roles remain unbound to authenticated identity in public contract",
+    "All 13 stages remain unaccepted",
+    "Missing Run16/17/19 primary source"
+  ],
+  "gates": {
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "independently_accepted_stages": 0,
+    "total_stages": 13,
+    "product_percent": null
+  },
+  "next_operation": "Recover full exact-head checkout, collect native_integration tests, rerun same RED/GREEN and full Python3.12 CI, obtain independent exact-head review; do not merge based on this local component."
+}

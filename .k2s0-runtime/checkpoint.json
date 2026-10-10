@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-08T02:33:00Z",
+  "updated_at": "2026-10-10T19:12:29.697Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -9,12 +9,14 @@
     "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
     "ci_run_id": 37682402540,
     "ci_run_number": 72,
-    "ci_conclusion": "failure"
+    "ci_conclusion": "failure",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "control_parent_sha": "ce3f088eda7644ac84332a3733bb35ef367ac00d"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
     "id": "SEQ-WP-002",
-    "phase": "red_verified",
+    "phase": "local_red_green_verified_not_integrated",
     "objective": "Enforce strict integer domains for RepresentationSnapshotRef.canonical_sequence and AdmitEvidenceRequest.based_on_sequence",
     "owned_paths": [
       "src/seed_contracts/semantic.py",
@@ -48,7 +50,7 @@
       "Exact-head CI failure unrelated to patch",
       "Unable to mutate source safely; prepare patch and proceed with unrelated tracer fixture/contract"
     ],
-    "next_action": "Strict-int PR #10 repair blocked at source write; next authorized mutation when write policy permits is canonical_sequence guard followed by based_on_sequence RED->GREEN and exact-head CI."
+    "next_action": "Integrate strict-int repair with admission aliasing security tests in complete exact-head native tree; new PR HEAD CI and fresh independent reviewer mandatory."
   },
   "evidence": [
     {
@@ -85,6 +87,14 @@
       "artifact": "K2S0-usable-v0-run13-handoff.zip",
       "remote_record": ".k2s0-runtime/evidence/20261008-run13.json",
       "new_work": "public-only stage2 admission adapter, public lookup, negative auth/correlation tests"
+    },
+    {
+      "type": "local_native_component",
+      "status": "not_independently_verified",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "artifact": "K2S0-usable-v0-run37-admission-boundary-redgreen.zip",
+      "remote_record": ".k2s0-runtime/evidence/20261010-run37-admission-alias-guard.json",
+      "result": "21 local partial-tree tests PASS after RED; full native unverified"
     }
   ],
   "pipeline": {
@@ -98,7 +108,9 @@
     "product_completion_percent": null,
     "verified_implementation_percent": null,
     "reason": "WBS baseline not independently established",
-    "tracer_complete": false
+    "tracer_complete": false,
+    "independently_accepted_stages": 0,
+    "independently_verified_packages": 0
   },
   "plugin_availability": {
     "github": "available",
@@ -109,7 +121,10 @@
   },
   "blockers": [
     "PR #10 source mutation attempt blocked by tool safety checks; do not retry unchanged call without changed cause",
-    "Stage-2 local adapter not in repo; no real public K2 execution or independent verification"
+    "Stage-2 local adapter not in repo; no real public K2 execution or independent verification",
+    "No complete canonical checkout or Python3.12 in isolated executor",
+    "Run16/17/19 primary source NOT RETRIEVED",
+    "Native integration and independent exact-head reviewer NOT OBTAINED"
   ],
   "next_packets": [
     {
@@ -128,5 +143,42 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "137da96428e742fdb34c0061adc818fb54a4f04b"
+  "control_head_sha": "137da96428e742fdb34c0061adc818fb54a4f04b",
+  "latest_local_increment": {
+    "record": ".k2s0-runtime/evidence/20261010-run37-admission-alias-guard.json",
+    "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+    "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "patch_sha256": "e1e31bbead4c9a4c899e77b91282b8eda8f7c73eb8600f8f911181068958eb39",
+    "artifact": "K2S0-usable-v0-run37-admission-boundary-redgreen.zip",
+    "artifact_sha256": "8d5a60be7e8c77abb55723dc9c692c806c41a2eb3c89f7c2f01112689a94e290",
+    "checks": [
+      {
+        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "source": "partial exact-Git-blob canonical modules PR10 unmodified + 2 new test modules",
+        "exit_code": 1,
+        "result": "21 collected, 11 failures and 4 errors",
+        "log_sha256": "a3c6c8caa0986d9f9717e757bf24976a8112fae7e1ed917e7f0cec7f979dd01e"
+      },
+      {
+        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "source": "identical partial tree after 2-file candidate patch",
+        "exit_code": 0,
+        "result": "21 tests passed; 0 skips",
+        "log_sha256": "2656911360025108deaceb57416be5130d765c937a1a0fa51efe2bbb8e28825d"
+      },
+      {
+        "cmd": "python -m compileall -q src tests",
+        "exit_code": 0
+      }
+    ],
+    "independent_review": false
+  },
+  "append_only_records_reconciled": [
+    "20261008-run13.json",
+    "20261008-run16-question.json",
+    "20261008-run16-final.json",
+    "20261008-run17-composition.json",
+    "20261008-run19-consent-gate.json",
+    "20261010-run37-admission-alias-guard.json"
+  ]
 }
