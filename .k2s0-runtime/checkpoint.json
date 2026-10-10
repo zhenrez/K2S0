@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-10T22:03:55.821Z",
+  "updated_at": "2026-10-10T23:00:53.868471Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,8 +11,8 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "9e9ed1368131030ba1f8a786117708a49048a73b",
-    "control_parent_tree": "8e9474d6c534047c1d6b693d4152899c3afa6de6"
+    "control_parent_sha": "6ab43ca9a25970f60e1ea55ec44d2bce20d910a6",
+    "control_parent_tree": "268c0b4d16a01dce32ec14d06dc489fe6dae063b"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
@@ -25,7 +25,7 @@
       "per_file_source_recovery",
       "independent_verifier"
     ],
-    "next_action": "Recover complete authorized exact-head checkout, collect actual native_integration under tests, reconcile immutable per-file source deltas, execute Python3.12 complete CI and independent review; do not retry forbidden product-branch writes."
+    "next_action": "Recover complete authorized exact-head checkout, collect native_integration, reconcile original Run16/17/19/37/38 source; P1-08 alias fix is locally RED→GREEN only. Python3.12 full CI and fresh independent review remain blocking; no forbidden product writes."
   },
   "evidence": [
     {
@@ -95,6 +95,14 @@
       "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
       "artifact": "K2S0-run40-component-replay-audit.zip",
       "result": "14 local component tests GREEN after RED; no current native complete repo"
+    },
+    {
+      "type": "local_native_seed_component",
+      "status": "not_independently_verified",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261010-run41-seed-detachment-subprocess.json",
+      "artifact": "K2S0-run41-seed-input-detachment-subprocess.zip",
+      "result": "16/16 local GREEN after 1 RED failure, native SeedEnvelope separate-process consumer pass; no complete native integration"
     }
   ],
   "pipeline": {
@@ -127,7 +135,8 @@
     "Native integration and independent exact-head reviewer NOT OBTAINED",
     "Run37 nested-alias candidate and Run38 replay candidate share public/contracts.py; require file-level integration on canonical head",
     "Run39 candidate is not an authoritative merge of Run37/38; original source artifacts NOT_RETRIEVED",
-    "Partial canonical 23-test local suite GREEN does not satisfy 13-stage native integration"
+    "Partial canonical 23-test local suite GREEN does not satisfy 13-stage native integration",
+    "P1-08 SeedEnvelope input detachment candidate is local only; requires full native integration"
   ],
   "next_packets": [
     {
@@ -146,7 +155,7 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "9e9ed1368131030ba1f8a786117708a49048a73b",
+  "control_head_sha": "6ab43ca9a25970f60e1ea55ec44d2bce20d910a6",
   "latest_local_increment": {
     "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
     "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
@@ -208,7 +217,8 @@
     "20261010-run37-admission-alias-guard.json",
     "20261010-run38-replay-wire-boolean.json",
     "20261010-run39-local-boundary-reconciliation.json",
-    "20261010-run40-component-replay-audit.json"
+    "20261010-run40-component-replay-audit.json",
+    "20261010-run41-seed-detachment-subprocess.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -240,6 +250,58 @@
       {
         "phase": "COMPILE",
         "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+        "exit_code": 0
+      }
+    ],
+    "independent_review": false
+  },
+  "latest_seed_component": {
+    "remote_record": ".k2s0-runtime/evidence/20261010-run41-seed-detachment-subprocess.json",
+    "classification": "LOCAL_NATIVE_SEED_SUBPROCESS_AND_MUTABLE_ALIAS_RED_GREEN_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "artifact": {
+      "name": "K2S0-run41-seed-input-detachment-subprocess.zip",
+      "sha256": "d11b3f8a52278697f087ec945ef35bfeea9eb72637fa5eeceaf7ba0c54ce0a27",
+      "local_evidence_sha256": "bbb6d1116310c3519bf4933b71ad81963c2090d6bdce9fee64a8d8e2cb486d41",
+      "verified_manifest_count": 10
+    },
+    "patch_sha256": "2415e40f0ec76564b332c9dd7a2d288aa9fd99791fbfc3ec2a9ebc556da7fcd7",
+    "original_git_blob": "9b769dbf8766267086b40c209018e5199ebd85e9",
+    "candidate_git_blob": "4040cdcfdbf25951849261ceea05753d042d79af",
+    "checks": [
+      {
+        "phase": "RED",
+        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "exit_code": 1,
+        "collected": 16,
+        "failures": 1,
+        "errors": 0,
+        "skips": 0,
+        "log_sha256": "9b0d1bdaa791f38fbe7c198b785ebd7c917647a79fd42fc3bc5b9cf607f9a170"
+      },
+      {
+        "phase": "GREEN",
+        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "exit_code": 0,
+        "collected": 16,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0,
+        "log_sha256": "12d6c8d0c1925a3ee2f53ff996ee9667988b53788fb9fbe082afe566cf89ff6a"
+      },
+      {
+        "phase": "PATCH",
+        "cmd": "git apply --check ../patches/p1_08_seed_detach.patch && git apply ../patches/p1_08_seed_detach.patch && cmp expected source",
+        "exit_code": 0
+      },
+      {
+        "phase": "COMPILE",
+        "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+        "exit_code": 0
+      },
+      {
+        "phase": "SUBPROCESS",
+        "cmd": "unittest separate interpreter native SeedEnvelope read/compile",
         "exit_code": 0
       }
     ],

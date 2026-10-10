@@ -1,0 +1,104 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at_utc": "2026-10-10T23:00:53.868471Z",
+  "classification": "LOCAL_NATIVE_SEED_SUBPROCESS_AND_MUTABLE_ALIAS_RED_GREEN_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_branch": "dt/4-seed-compiler-projection",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "pr": 10,
+    "pr_draft": true,
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure",
+    "control_expected_head": "6ab43ca9a25970f60e1ea55ec44d2bce20d910a6",
+    "control_parent_tree": "268c0b4d16a01dce32ec14d06dc489fe6dae063b"
+  },
+  "work": {
+    "package": "P1-08",
+    "status": "LOCAL_PATCH_CANDIDATE_ONLY",
+    "paths": [
+      "src/seed_contracts/envelope.py",
+      "tests/test_seed_envelope_process_boundary.py"
+    ],
+    "finding": "SeedEnvelope validation returns shallow dicts and retains nested aliases from caller inputs; mutating caller nested objects changes subsequent compiled bytes",
+    "repair": "Use json.loads(_canonical_json(material)) to detach JSON-native values for SeedSection, ExtensionBlock, acquisition_info, loss_manifest; NOT a host authorization, consent/revocation, or immutable-exposed-object fix",
+    "original_git_blob": "9b769dbf8766267086b40c209018e5199ebd85e9",
+    "candidate_git_blob": "4040cdcfdbf25951849261ceea05753d042d79af",
+    "patch_sha256": "2415e40f0ec76564b332c9dd7a2d288aa9fd99791fbfc3ec2a9ebc556da7fcd7",
+    "test_sha256": "ca24b90ce483d087b7e2e731298ba56414a992f4b131f70981cee3b9f32bd16f"
+  },
+  "checks": [
+    {
+      "phase": "RED",
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "exit_code": 1,
+      "collected": 16,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0,
+      "log_sha256": "9b0d1bdaa791f38fbe7c198b785ebd7c917647a79fd42fc3bc5b9cf607f9a170"
+    },
+    {
+      "phase": "GREEN",
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "collected": 16,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "log_sha256": "12d6c8d0c1925a3ee2f53ff996ee9667988b53788fb9fbe082afe566cf89ff6a"
+    },
+    {
+      "phase": "PATCH",
+      "cmd": "git apply --check ../patches/p1_08_seed_detach.patch && git apply ../patches/p1_08_seed_detach.patch && cmp expected source",
+      "exit_code": 0
+    },
+    {
+      "phase": "COMPILE",
+      "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+      "exit_code": 0
+    },
+    {
+      "phase": "SUBPROCESS",
+      "cmd": "unittest separate interpreter native SeedEnvelope read/compile",
+      "exit_code": 0
+    }
+  ],
+  "runtime": {
+    "python": "3.13.5",
+    "partial_exact_blob_checkout": true,
+    "complete_canonical_checkout": false,
+    "python312": false,
+    "independent_consumer_process": true,
+    "independent_reviewer": false,
+    "fixture": "synthetic_only",
+    "native_admission": false,
+    "full_13_stage_tracer": false
+  },
+  "artifact": {
+    "name": "K2S0-run41-seed-input-detachment-subprocess.zip",
+    "sha256": "d11b3f8a52278697f087ec945ef35bfeea9eb72637fa5eeceaf7ba0c54ce0a27",
+    "local_evidence_sha256": "bbb6d1116310c3519bf4933b71ad81963c2090d6bdce9fee64a8d8e2cb486d41",
+    "verified_manifest_count": 10
+  },
+  "recovery": {
+    "originals_run16_17_19": "NOT_RETRIEVED",
+    "originals_run37_38": "NOT_RETRIEVED",
+    "remote_evidence_is_not_source": true
+  },
+  "gates": {
+    "independently_accepted_stages": 0,
+    "total_stages": 13,
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "product_percent": null
+  },
+  "blockers": [
+    "SOURCE_WRITE_SAFETY_DENIAL_UNCHANGED_NO_RETRY",
+    "NO_FULL_CANONICAL_CHECKOUT_OR_PYTHON312",
+    "MISSING_PRIMARY_HANDOFF_ARCHIVES",
+    "NO_FRESH_INDEPENDENT_REVIEW"
+  ],
+  "next_exact_operation": "Recover full exact-head checkout and original run source; collect native_integration tests; run Python3.12 canonical acceptance, independent exact-head review; no prohibited product-branch write retry."
+}
