@@ -1,0 +1,114 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at_utc": "2026-10-10T22:03:55.821Z",
+  "classification": "LOCAL_COMPONENT_REPLAY_NOT_FULL_NATIVE_NOT_INDEPENDENTLY_VERIFIED",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "pr": 10,
+    "pr_draft": true,
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "source_branch": "dt/4-seed-compiler-projection",
+    "ci_run": 37682402540,
+    "ci_conclusion": "failure",
+    "control_expected_head": "9e9ed1368131030ba1f8a786117708a49048a73b",
+    "control_parent_tree": "8e9474d6c534047c1d6b693d4152899c3afa6de6",
+    "checkpoint_previous_blob": "29c9e3ab83b8d8cdfe6c32e17bd0a231806e9994"
+  },
+  "prior_evidence_blobs_preserved": [
+    {
+      "path": ".k2s0-runtime/evidence/20261008-run13.json",
+      "sha": "89d7412db87a3e5b1f0f6505d2c73b9a0b64ac37"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261008-run16-final.json",
+      "sha": "ddb099b6ae19476035515c3a32755b5d3673489b"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261008-run16-question.json",
+      "sha": "016c313ae59f35ab288239b78bee2e5f85dd68e5"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261008-run17-composition.json",
+      "sha": "876c6870d0f76f451f53a9056e941bac15b7b786"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261008-run19-consent-gate.json",
+      "sha": "195971e2b9d4f8c6be919d1ec2876116f3661663"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261010-run37-admission-alias-guard.json",
+      "sha": "0b65564c24f76ce331ce61e4341c7a5673abff13"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261010-run38-replay-wire-boolean.json",
+      "sha": "9ecfd766eaa4aa91ae7afbfbe1de0079de43d044"
+    },
+    {
+      "path": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
+      "sha": "c37a8e62ce00b3365c3d59c7fed45a23ab9d3e54"
+    }
+  ],
+  "work": {
+    "package": "P0-01",
+    "product_mutation": false,
+    "component_replay": true
+  },
+  "artifact": {
+    "name": "K2S0-run40-component-replay-audit.zip",
+    "sha256": "f0904a94144cd04d5f2862f35662fc18b20f8fa0d93b1e54e0dcc89ec51ee92a",
+    "patch_sha256": "89a91452d301c04a7ccaabc64a63a65aaffca077874cd5c2590fa01afa6785b3",
+    "fixture_sha256": "0792f838c63e029c879240a04e9f9283b0378c41b0d3f2741bc0a856ddeb02d3"
+  },
+  "checks": [
+    {
+      "phase": "RED",
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "exit_code": 1,
+      "collected": 14,
+      "failures": 6,
+      "errors": 4,
+      "log_sha256": "2bb239ef716ecc54cb9481812f607f9e366f8d18694f7abfe6aa88127d347ce4"
+    },
+    {
+      "phase": "GREEN",
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "collected": 14,
+      "skips": 0,
+      "log_sha256": "ba3d6c2cdfe4c09ad36d81b6710b216d0459a60a5b36f117f5698dfe7a7bf6c2"
+    },
+    {
+      "phase": "COMPILE",
+      "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+      "exit_code": 0
+    }
+  ],
+  "original_source_git_blobs": {
+    "src/seed_contracts/__init__.py": "b427c87de80f55e56b53adab1cc453e571b66d17",
+    "src/seed_contracts/envelope.py": "9b769dbf8766267086b40c209018e5199ebd85e9",
+    "src/seed_contracts/semantic.py": "6ca48760461236a59d4d064170f53009141faaa3",
+    "src/argo_dt/public/contracts.py": "ade36e6bb042da457f78a4b44d40507a189c3089"
+  },
+  "runtime": {
+    "python": "3.13.5",
+    "complete_canonical_checkout": false,
+    "python312_available": false,
+    "independent_reviewer": false,
+    "local_source_imports_verified": true
+  },
+  "gates": {
+    "accepted_stages": 0,
+    "total_stages": 13,
+    "independent_verified_packages": 0,
+    "total_packages": 20,
+    "product_percent": null
+  },
+  "blockers": [
+    "SOURCE_WRITE_SAFETY_DENIAL_UNCHANGED_NO_RETRY",
+    "NO_COMPLETE_CANONICAL_CHECKOUT_OR_PYTHON312",
+    "RUN16_17_19_37_38_SOURCE_NOT_RETRIEVED",
+    "NO_FRESH_INDEPENDENT_REVIEWER"
+  ],
+  "next_exact_operation": "Recover complete authorized exact-head checkout, collect actual native_integration under tests, reconcile immutable per-file source deltas, execute Python3.12 complete CI and independent review; do not retry forbidden product-branch writes."
+}
