@@ -1,0 +1,79 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at_utc": "2026-10-10T20:02:17.799281Z",
+  "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_branch": "dt/4-seed-compiler-projection",
+    "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "pr": 10,
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure",
+    "control_expected_head": "8fea59aa97f4f655dbacf48cc68d14e08c04107f",
+    "control_expected_tree": "85dc6188caf40078d0ac50c50bd1055910f346dc"
+  },
+  "work": {
+    "packages": [
+      "P0-01",
+      "P2-04"
+    ],
+    "status": "LOCAL_PATCH_CANDIDATE_ONLY",
+    "finding": "AdmissionResult replayed wire parser coerces nonboolean truthy values: wire replayed='false' plus original_result_ref is accepted as replayed=True. Direct semantic constructor accepts nonboolean truthy replay flags.",
+    "repair": "Require genuine bool in wire and semantic construction; preserve absent default false, true/false roundtrip, original receipt coupling, prior strict-sequence guard.",
+    "source_blob_semantic": "6ca48760461236a59d4d064170f53009141faaa3",
+    "source_blob_contracts": "ade36e6bb042da457f78a4b44d40507a189c3089",
+    "result_blob_semantic": "a332d50dc9cadcba3db2302a789885196b43e805",
+    "result_blob_contracts": "67712666dfdb1193c602d44437616659d8e08ef6",
+    "combined_patch_sha256": "ad73e88e059251a3e5bd7a3adc949665c2df3f166ab43a98833dafa879ceec7e",
+    "replay_patch_sha256": "4044f37052bbf6dfe56af0d7555c262bdd1782f9c6e4a15a959251c7e37e683a",
+    "test_sha256": "19ea8de8af9d03093cb20345d50e4f06337a1c5a379fc8ab2621069e3d0e025a",
+    "artifact": "K2S0-usable-v0-run38-replay-boolean-native-redgreen.zip",
+    "artifact_sha256": "b6d8196b6f9aec7921856220659f8577bad60e27ce5b31fc2c500855ac3e56c7",
+    "local_evidence_sha256": "043e96d65481ed450ca617c2dd90c118ae1c395e41c2c1e9e51ded6967502071"
+  },
+  "checks": [
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "source": "partial Git-blob-verified canonical PR10 modules, strict-int repair present in both phases",
+      "phase": "RED",
+      "exit_code": 1,
+      "tests": 18,
+      "subtest_failures": 14,
+      "log_sha256": "a802adbc2cbe0446a319589640ccec3f428ee0d2f4e83a7df8ffce0b2b2e90a0"
+    },
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "source": "identical partial tree with replay bool repair added",
+      "phase": "GREEN",
+      "exit_code": 0,
+      "tests": 18,
+      "skips": 0,
+      "log_sha256": "9698bae943f574730f3f21d828ca3ad7467a35f38e03d938f61feca6747141a5"
+    },
+    {
+      "cmd": "python -m compileall -q src tests",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "runtime": {
+    "python": "3.13.5",
+    "complete_checkout": false,
+    "python312_available": false,
+    "independent_reviewer": false
+  },
+  "gates": {
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "independently_accepted_stages": 0,
+    "total_stages": 13,
+    "product_percent": null
+  },
+  "conflicts": [
+    "Run37 alias guard modifies same public/contracts.py; candidate must be file-level reconciled, not overlaid wholesale",
+    "Run16/17/19 primary source not retrieved",
+    "Full native integration, exact-head Python3.12 CI and independent review remain absent"
+  ],
+  "next_operation": "In complete authorized current-head checkout reconcile Run37 and Run38 per-file deltas, collect native integration, execute Python3.12 gates, independent exact-head review; no source mutation while prior source-write denial persists."
+}
