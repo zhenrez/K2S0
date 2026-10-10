@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-10T20:02:17.799281Z",
+  "updated_at": "2026-10-10T21:13:01.584Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,13 +11,13 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "8fea59aa97f4f655dbacf48cc68d14e08c04107f",
-    "control_parent_tree": "85dc6188caf40078d0ac50c50bd1055910f346dc"
+    "control_parent_sha": "f72896f68d1331ded1beb7f38fb64f684b9c6ec8",
+    "control_parent_tree": "f67b94fe005478af3eaa41b7628a049b71c3ca16"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
     "id": "P2-04-REPLAY-BOOLEAN-001",
-    "phase": "local_native_redgreen_verified_not_integrated",
+    "phase": "run39_local_candidate_not_full_integration",
     "objective": "Reject nonboolean replayed flags in public admission result parser and semantic constructor without breaking receipt coupling or prior strict-sequence repair",
     "owned_paths": [
       "src/seed_contracts/semantic.py",
@@ -51,7 +51,7 @@
       "Exact-head CI failure unrelated to patch",
       "Unable to mutate source safely; prepare patch and proceed with unrelated tracer fixture/contract"
     ],
-    "next_action": "Reconcile Run37 alias guard with strict-sequence and replay flags on full exact-head native checkout; run Python3.12 CI then independent review."
+    "next_action": "Recover original Run37/38 source and a full exact-head checkout, reconcile native service/public contract compatibility and frozen JSON serialization before testing Python3.12 CI and independent review."
   },
   "evidence": [
     {
@@ -104,6 +104,15 @@
       "artifact": "K2S0-usable-v0-run38-replay-boolean-native-redgreen.zip",
       "remote_record": ".k2s0-runtime/evidence/20261010-run38-replay-wire-boolean.json",
       "result": "18 partial-tree unit tests GREEN after RED 14 subtest failures, no skips; full native unverified"
+    },
+    {
+      "type": "local_native_component",
+      "status": "not_independently_verified",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "artifact": "K2S0-usable-v0-run39-reconciled-boundary-candidate.zip",
+      "remote_record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
+      "result": "23 partial-tree tests GREEN after 21 RED failures; 0 skips; no native full integration",
+      "conflicts": "Run37/Run38 sources not retrieved; alternative candidate only"
     }
   ],
   "pipeline": {
@@ -134,7 +143,9 @@
     "No complete canonical checkout or Python3.12 in isolated executor",
     "Run16/17/19 primary source NOT RETRIEVED",
     "Native integration and independent exact-head reviewer NOT OBTAINED",
-    "Run37 nested-alias candidate and Run38 replay candidate share public/contracts.py; require file-level integration on canonical head"
+    "Run37 nested-alias candidate and Run38 replay candidate share public/contracts.py; require file-level integration on canonical head",
+    "Run39 candidate is not an authoritative merge of Run37/38; original source artifacts NOT_RETRIEVED",
+    "Partial canonical 23-test local suite GREEN does not satisfy 13-stage native integration"
   ],
   "next_packets": [
     {
@@ -153,40 +164,58 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "8fea59aa97f4f655dbacf48cc68d14e08c04107f",
+  "control_head_sha": "f72896f68d1331ded1beb7f38fb64f684b9c6ec8",
   "latest_local_increment": {
-    "record": ".k2s0-runtime/evidence/20261010-run38-replay-wire-boolean.json",
+    "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
     "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
     "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
-    "patch_sha256": "ad73e88e059251a3e5bd7a3adc949665c2df3f166ab43a98833dafa879ceec7e",
-    "artifact": "K2S0-usable-v0-run38-replay-boolean-native-redgreen.zip",
-    "artifact_sha256": "b6d8196b6f9aec7921856220659f8577bad60e27ce5b31fc2c500855ac3e56c7",
+    "patch_sha256": "97a5ea71e3d5437ba902dc7f47ee73f850f2b67367a6c6839f259e0ccf7c8e76",
+    "artifact": "K2S0-usable-v0-run39-reconciled-boundary-candidate.zip",
+    "artifact_sha256": "a6560aba79aee12edd66846ec97752eb43ca9ea62fd398cb1caf74b14d74ec32",
     "checks": [
       {
         "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
         "phase": "RED",
+        "source": "partial canonical exact Git-blob original with Run36 strict-int fix; 9 new boundary tests",
         "exit_code": 1,
-        "tests": 18,
-        "skips": null,
-        "log_sha256": "a802adbc2cbe0446a319589640ccec3f428ee0d2f4e83a7df8ffce0b2b2e90a0"
+        "collected": 23,
+        "failures": 21,
+        "log_sha256": "5aea1c8fa4f32399f5d3ad97605ffdc395c47057316c007a0905186567ddabcd"
       },
       {
         "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
         "phase": "GREEN",
+        "source": "identical partial source after replay+alias repairs",
         "exit_code": 0,
-        "tests": 18,
+        "collected": 23,
         "skips": 0,
-        "log_sha256": "9698bae943f574730f3f21d828ca3ad7467a35f38e03d938f61feca6747141a5"
+        "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
       },
       {
-        "cmd": "python -m compileall -q src tests",
+        "cmd": "git apply --check ../integrated_source_fix.patch",
         "exit_code": 0,
-        "tests": null,
-        "skips": null,
-        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "source": "exact original canonical source modules"
+      },
+      {
+        "cmd": "git apply ../integrated_source_fix.patch",
+        "exit_code": 0
+      },
+      {
+        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "phase": "REBUILD_GREEN",
+        "exit_code": 0,
+        "collected": 23,
+        "skips": 0,
+        "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
+      },
+      {
+        "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+        "exit_code": 0
       }
     ],
-    "independent_review": false
+    "independent_review": false,
+    "not_authoritative_reconciliation": true,
+    "prior_local_increment": ".k2s0-runtime/evidence/20261010-run38-replay-wire-boolean.json"
   },
   "append_only_records_reconciled": [
     "20261008-run13.json",
@@ -195,6 +224,7 @@
     "20261008-run17-composition.json",
     "20261008-run19-consent-gate.json",
     "20261010-run37-admission-alias-guard.json",
-    "20261010-run38-replay-wire-boolean.json"
+    "20261010-run38-replay-wire-boolean.json",
+    "20261010-run39-local-boundary-reconciliation.json"
   ]
 }

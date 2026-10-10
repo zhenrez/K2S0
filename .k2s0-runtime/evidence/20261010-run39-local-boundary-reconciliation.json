@@ -1,0 +1,95 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+  "recorded_at_utc": "2026-10-10T21:12:58.815Z",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "control_expected_head": "f72896f68d1331ded1beb7f38fb64f684b9c6ec8",
+    "pr": 10,
+    "ci_run_id": 37682402540,
+    "ci_conclusion": "failure"
+  },
+  "work": {
+    "packages": [
+      "P0-01",
+      "P1-03",
+      "P2-03",
+      "P2-04"
+    ],
+    "scope": "Local alternative candidate combining strict-sequence, replay-boolean and nested alias guards; original Run37/Run38 source archives NOT_RETRIEVED",
+    "status": "LOCAL_PATCH_CANDIDATE_ONLY",
+    "source_blob_contracts": "ade36e6bb042da457f78a4b44d40507a189c3089",
+    "source_blob_semantic": "6ca48760461236a59d4d064170f53009141faaa3",
+    "result_blob_contracts": "5d6d6d6aed8a2ae011c095a7da16fe1fcdf0dcec",
+    "result_blob_semantic": "a332d50dc9cadcba3db2302a789885196b43e805",
+    "patch_sha256": "97a5ea71e3d5437ba902dc7f47ee73f850f2b67367a6c6839f259e0ccf7c8e76",
+    "artifact": "K2S0-usable-v0-run39-reconciled-boundary-candidate.zip",
+    "artifact_sha256": "a6560aba79aee12edd66846ec97752eb43ca9ea62fd398cb1caf74b14d74ec32"
+  },
+  "native_checks": [
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "phase": "RED",
+      "source": "partial canonical exact Git-blob original with Run36 strict-int fix; 9 new boundary tests",
+      "exit_code": 1,
+      "collected": 23,
+      "failures": 21,
+      "log_sha256": "5aea1c8fa4f32399f5d3ad97605ffdc395c47057316c007a0905186567ddabcd"
+    },
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "phase": "GREEN",
+      "source": "identical partial source after replay+alias repairs",
+      "exit_code": 0,
+      "collected": 23,
+      "skips": 0,
+      "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
+    },
+    {
+      "cmd": "git apply --check ../integrated_source_fix.patch",
+      "exit_code": 0,
+      "source": "exact original canonical source modules"
+    },
+    {
+      "cmd": "git apply ../integrated_source_fix.patch",
+      "exit_code": 0
+    },
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "phase": "REBUILD_GREEN",
+      "exit_code": 0,
+      "collected": 23,
+      "skips": 0,
+      "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
+    },
+    {
+      "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
+      "exit_code": 0
+    }
+  ],
+  "runtime": {
+    "python": "3.13.5",
+    "python312_available": false,
+    "complete_checkout": false,
+    "mypy_available": false,
+    "ruff_available": false,
+    "independent_reviewer": false
+  },
+  "gates": {
+    "independently_accepted_stages": 0,
+    "total_stages": 13,
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "product_percent": null
+  },
+  "blockers": [
+    "Original Run16/17/19 primary source NOT_RETRIEVED",
+    "Original Run37/38 patch archives NOT_RETRIEVED; merge not authoritative",
+    "Full native integration and exact-head Python3.12 CI NOT EXECUTED",
+    "No independent exact-head reviewer",
+    "Prior product-branch source-write safety denial remains, not retried"
+  ],
+  "next_operation": "Recover original Run37/38 source and a full exact-head checkout, reconcile native service/public contract compatibility and frozen JSON serialization before testing Python3.12 CI and independent review."
+}
