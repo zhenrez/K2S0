@@ -1,0 +1,72 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at_utc": "2026-10-10T23:06:00Z",
+  "classification": "RECOVERED_CANONICAL_CI_NATIVE_BACKEND_TEST_EXECUTION_NOT_NATIVE_13_STAGE_TRACER",
+  "authority": {
+    "repository": "zhenrez/K2S0",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "pr": 10,
+    "workflow_run_id": 37682402540,
+    "workflow_run_number": 72,
+    "workflow_job_id": 113001524503,
+    "workflow_blob": "e5a8f34ee4b1ce67a0bcd913021a61a0cbd5d218",
+    "source_test_blob": "3d6025d7752dfd9e5cfddb160454e805e2bbbc77",
+    "control_expected_head": "2f6d7b074c7eaf6409861cb58433277c0a467671",
+    "control_parent_tree": "118c674713edc717fa5c0cf101fbeba45b2e2b4f"
+  },
+  "execution": {
+    "date": "2026-10-07",
+    "python": "3.12",
+    "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+    "exit_code": 1,
+    "collection": 110,
+    "pass": 109,
+    "failures": 1,
+    "errors": 0,
+    "skips": 0,
+    "modules": {
+      "test_contract_conformance": 7,
+      "test_day0_architecture_contracts": 7,
+      "test_dt_invariants": 28,
+      "test_epistemic_core": 7,
+      "test_generated_grpc_contract": 1,
+      "test_k2_public_facade": 10,
+      "test_persistence": 18,
+      "test_seed_envelope": 4,
+      "test_synchronization": 11,
+      "test_transport_adapters": 17
+    },
+    "verbatim_decisive": [
+      "test_public_admission_reaches_existing_k2_and_maps_effects (test_k2_public_facade.PublicFacadeTests.test_public_admission_reaches_existing_k2_and_maps_effects) ... ok",
+      "test_idempotent_replay_returns_original_public_admission (test_k2_public_facade.PublicFacadeTests.test_idempotent_replay_returns_original_public_admission) ... ok",
+      "test_append_contract_cas_idempotency_chain_and_outbox (test_persistence.SQLitePersistenceConformance.test_append_contract_cas_idempotency_chain_and_outbox) ... ok",
+      "test_sequence_contracts_reject_boolean_values (test_k2_public_facade.PublicFacadeTests.test_sequence_contracts_reject_boolean_values) ... FAIL",
+      "Ran 110 tests in 0.321s",
+      "FAILED (failures=1)"
+    ],
+    "real_native_setup": "tests/test_k2_public_facade.py:108-114 constructs SQLiteEventStore(), DigitalTwinService(store, ProjectionCompiler(DefaultDenyPolicy())), InProcessK2Facade(service). These are not stubs for those passed tests.",
+    "job_url": "https://github.com/zhenrez/K2S0/actions/runs/37682402540/job/113001524503",
+    "log_hash": "NOT_COMPUTED_UNDER_CURRENT_TOOL_INTERFACE"
+  },
+  "reconciliation": {
+    "finding": "The assertion 'no actual native integration test has ever run' is too broad. An exact-head historical Python3.12 CI execution ran native K2 facade and SQLite tests; their individual results passed except unrelated strict-sequence defect. This is NOT the missing staged native_integration 13-stage workflow.",
+    "native_backend_component_ci": "HISTORICAL_EXECUTED_PARTIAL_PASS",
+    "staged_native_integration": "NOT_COLLECTED_IN_CI_TEST_MODULES",
+    "corrected_PR10_green_CI": "NOT_RUN",
+    "full_native_tracer": "NOT_RUN",
+    "independent_reviewer": "NOT_OBTAINED"
+  },
+  "local_evidence_artifact": {
+    "name": "K2S0-run41-canonical-CI-native-baseline.json",
+    "sha256": "f3b6580a359cfd19c46861ef2dd06927baaa91d0b40883bef12f45f5f31c76d9"
+  },
+  "gates": {
+    "independently_accepted_stages": 0,
+    "total_stages": 13,
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "product_percent": null
+  },
+  "next_operation": "Recover original staged native_integration source and exact repo checkout; collect new native tracer in tests; run Python3.12 exact candidate CI after source fixes, independent review before merge; do not retry blocked product writes."
+}

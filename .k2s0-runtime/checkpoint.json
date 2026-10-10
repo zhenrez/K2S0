@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-10T23:00:53.868471Z",
+  "updated_at": "2026-10-10T23:06:00Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,8 +11,8 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "6ab43ca9a25970f60e1ea55ec44d2bce20d910a6",
-    "control_parent_tree": "268c0b4d16a01dce32ec14d06dc489fe6dae063b"
+    "control_parent_sha": "2f6d7b074c7eaf6409861cb58433277c0a467671",
+    "control_parent_tree": "118c674713edc717fa5c0cf101fbeba45b2e2b4f"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
@@ -25,7 +25,7 @@
       "per_file_source_recovery",
       "independent_verifier"
     ],
-    "next_action": "Recover complete authorized exact-head checkout, collect native_integration, reconcile original Run16/17/19/37/38 source; P1-08 alias fix is locally RED→GREEN only. Python3.12 full CI and fresh independent review remain blocking; no forbidden product writes."
+    "next_action": "Native K2 public facade+SQLite baseline already executed historically in CI #72 (109/110 PASS); staged 13-stage tracer NOT collected. Recover source and add native_integration tests under canonical tests discovery; run corrected exact-head Python3.12 CI and independent review. Product branch write safety denial unchanged."
   },
   "evidence": [
     {
@@ -103,6 +103,15 @@
       "remote_record": ".k2s0-runtime/evidence/20261010-run41-seed-detachment-subprocess.json",
       "artifact": "K2S0-run41-seed-input-detachment-subprocess.zip",
       "result": "16/16 local GREEN after 1 RED failure, native SeedEnvelope separate-process consumer pass; no complete native integration"
+    },
+    {
+      "type": "historical_canonical_ci_native_execution",
+      "status": "CONFIRMED_HISTORICAL_PARTIAL_GREEN_NOT_TRACER",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261010-run41-native-ci-baseline-reconciliation.json",
+      "run_id": 37682402540,
+      "job_id": 113001524503,
+      "observation": "GitHub Actions Python3.12 110 collected, 109 passed, one strict-sequence failure; public K2 facade/SQLite tests passed"
     }
   ],
   "pipeline": {
@@ -155,7 +164,7 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "6ab43ca9a25970f60e1ea55ec44d2bce20d910a6",
+  "control_head_sha": "2f6d7b074c7eaf6409861cb58433277c0a467671",
   "latest_local_increment": {
     "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
     "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
@@ -218,7 +227,8 @@
     "20261010-run38-replay-wire-boolean.json",
     "20261010-run39-local-boundary-reconciliation.json",
     "20261010-run40-component-replay-audit.json",
-    "20261010-run41-seed-detachment-subprocess.json"
+    "20261010-run41-seed-detachment-subprocess.json",
+    "20261010-run41-native-ci-baseline-reconciliation.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -306,5 +316,18 @@
       }
     ],
     "independent_review": false
+  },
+  "canonical_native_baseline": {
+    "remote_record": ".k2s0-runtime/evidence/20261010-run41-native-ci-baseline-reconciliation.json",
+    "run": 72,
+    "job": 113001524503,
+    "python": "3.12",
+    "collected": 110,
+    "passed": 109,
+    "failed": 1,
+    "skipped": 0,
+    "public_facade_native_passed": true,
+    "tracer_13_stages_not_collected": true,
+    "exact_head_green": false
   }
 }
