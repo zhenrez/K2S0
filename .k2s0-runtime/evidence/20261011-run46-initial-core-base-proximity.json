@@ -1,0 +1,93 @@
+{
+  "schema": "k2s0.usable-v0.evidence/v1",
+  "record_id": "20261011-run46-initial-core-base-proximity",
+  "timestamp_utc": "2026-10-11T08:07:26.897Z",
+  "disposition": "VERIFIED_LOCAL_PROVENANCE_INCREMENT_NOT_CODE_OR_13_STAGE_ACCEPTANCE",
+  "authority": {
+    "repo": "zhenrez/K2S0",
+    "pr": 10,
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "candidate_early_base": "8d60ca33abe201b93da4e1e23da73bd27240f062",
+    "candidate_early_base_tree": "41b22c856e9a4eb24924885d3a2177aeb6ba2a0c",
+    "control_expected_head": "d954eb33428849379c0d8929893f875178f5ba27"
+  },
+  "archive": {
+    "name": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "file_count": 38,
+    "early_base_exact_blobs": 26,
+    "early_base_different_blobs": 12,
+    "PR10_exact_blobs": 6,
+    "PR10_different_blobs": 32,
+    "early_base_missing_from_archive": [
+      "LICENSE"
+    ],
+    "early_base_different_paths": [
+      "CHANGELOG.md",
+      "README.md",
+      "VALIDATION.md",
+      "docs/MERGE_CONTRACT.md",
+      "openapi/dt-v1.yaml",
+      "pyproject.toml",
+      "src/argo_dt/aggregate.py",
+      "src/argo_dt/compiler.py",
+      "src/argo_dt/event_store.py",
+      "src/argo_dt/service.py",
+      "src/argo_dt/sync.py",
+      "tests/test_dt_invariants.py"
+    ],
+    "base_status": "PROXIMITY_CANDIDATE_ONLY_NOT_PROVEN_SOURCE_ANCESTRY_OR_SUPERSESSION"
+  },
+  "read_only_native_capabilities": {
+    "confirmed_at_source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "native_elicitor": "src/argo_dt/epistemic.py GapDirectedElicitor.plan & verify_plan, source blob 1ba2261e43e369850814d0a997dd67bdeb50ca71",
+    "native_question_answer": "src/argo_dt/service.py plan_elicitation & record_elicitation_response, blob 101d31b266e7cd87225653059505674cabd529eb",
+    "encrypted_bronze": "src/argo_dt/bronze.py EncryptedFileBronzeVault AES-256-GCM, blob 55b13d1ea169e193dceed5d932453046d577687b",
+    "external_public_gap": "src/argo_dt/public/contracts.py K2PublicAPI currently declares five read/admit methods; no public answer/export. Only K2-host code may perform review.",
+    "crash_risk": "service.record_elicitation_response puts Bronze before awaited append; crash or concurrency failure can leave orphan; source-observed risk, not reproduced native"
+  },
+  "local_checks": [
+    {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -v",
+      "environment": "historical archive Python 3.13.5",
+      "exit_code": 0,
+      "collected": 15,
+      "passed": 15,
+      "skips": 0,
+      "log_sha256": "caa34aa9c71a6c45b0d7e45075d641c5c1257052b63f9f581e8d54010f60bf59",
+      "scope": "HISTORICAL_ONLY_NOT_EXACT_HEAD_NATIVE_INTEGRATION"
+    },
+    {
+      "command": "SHA256SUMS.json verification and ZIP CRC check",
+      "exit_code": 0,
+      "files_verified": 3,
+      "zip_crc_bad": null,
+      "scope": "LOCAL_ARTIFACT_INTEGRITY_NOT_SOURCE_AUTHENTICITY"
+    }
+  ],
+  "artifact": {
+    "name": "K2S0-run46-source-base-proximity-audit.zip",
+    "sha256": "cb674e9b5a3a33b06ebb0623267ca548603b010c3c1b483d0f48130b6bcc05f8",
+    "manifest_sha256": "eb1bd4ec692a520f8eb0eb8c08dce796db1836fc90f3a27de3d205d23d7e6b7d"
+  },
+  "stage_gate": {
+    "independently_verified": 0,
+    "total": 13
+  },
+  "wbs": {
+    "independently_verified": 0,
+    "total": 20,
+    "product_percentage": null
+  },
+  "claimed_product_mutations": 0,
+  "source_branch_mutations": 0,
+  "missing": [
+    "Run16/17/19 original implementation sources",
+    "complete canonical executable checkout",
+    "Python 3.12 exact-head RED/GREEN",
+    "13-stage native acceptance",
+    "read-only fresh independent reviewer"
+  ],
+  "next_operation": "Use the 26/38 early-base overlap to isolate and attribute the 12 original archive differences, recover Run16/17/19 primary handoffs, and integrate only independently verified per-file deltas onto the exact current canonical checkout; no wholesale archive copy."
+}

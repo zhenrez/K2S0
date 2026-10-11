@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T03:39:54.328Z",
+  "updated_at": "2026-10-11T08:07:26.897Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,21 +11,21 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "54adb9d383c9f587f2220d055a0707fbe146b6e8",
-    "control_parent_tree": "f518d5c904faf3b000973b5e49acb2b95b9563cc"
+    "control_parent_sha": "d954eb33428849379c0d8929893f875178f5ba27",
+    "control_parent_tree": "6c0e4b45eec70e183b06b4d6a2d70abd03d22d1e"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
-    "id": "P0-02-HISTORICAL-COMPLETE-38-FILE-MANIFEST",
-    "phase": "VERIFIED_LOCAL_38_FILE_HASH_INVENTORY_NOT_RUN09_22_SOURCE_RECOVERY",
-    "objective": "Preserve 38-file exact/differential archive classification; do not transplant historical ZIP; recover required primary handoffs and canonical native checkout",
+    "id": "P0-02-INITIAL-CORE-BASE-PROXIMITY",
+    "phase": "CANDIDATE_BASE_26_OF_38_BLOB_MATCHES_NOT_PROVEN_ANCESTRY",
+    "objective": "Attribute 12 archive deviations from original K2 core; preserve historical original; reconcile missing primary handoffs without transplant",
     "owned_paths": [],
     "dependencies": [
-      "missing_primary_handoffs",
-      "complete_exact_git_checkout",
-      "independent_reviewer"
+      "Run16/17/19_original_source_NOT_RETRIEVED",
+      "complete_canonical_checkout",
+      "independent_review"
     ],
-    "next_action": "Recover Run16/17/19 original source and complete exact-head canonical checkout; run canonical native integration tests and PR10 Python3.12 RED/GREEN; obtain independent exact-head review."
+    "next_action": "Use the 26/38 early-base overlap to isolate and attribute the 12 original archive differences, recover Run16/17/19 primary handoffs, and integrate only independently verified per-file deltas onto the exact current canonical checkout; no wholesale archive copy."
   },
   "evidence": [
     {
@@ -155,6 +155,17 @@
       "artifact_sha256": "8d857b4d1bab65be400aee0d0b1230c8772fae609a7572aa1d5140af6640cbfd",
       "manifest_sha256": "71a3110e14e7304d03e97da65dec6fa98c2547479e37d1d2bb06a90d75243cb1",
       "observation": "All 38 historical v0.1.0 files compared to PR10 Git blob OIDs, 6 exact, 32 divergent; historical native 15/15 pass NOT canonical acceptance"
+    },
+    {
+      "type": "historical_archive_initial_base_proximity",
+      "status": "CONFIRMED_HASH_PROXIMITY_ONLY_NOT_ANCESTRY_NOT_INTEGRATION",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "early_base_sha": "8d60ca33abe201b93da4e1e23da73bd27240f062",
+      "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run46-initial-core-base-proximity.json",
+      "artifact": "K2S0-run46-source-base-proximity-audit.zip",
+      "artifact_sha256": "cb674e9b5a3a33b06ebb0623267ca548603b010c3c1b483d0f48130b6bcc05f8",
+      "observation": "26/38 old ZIP blobs identical to original core (2026-09-04); 12 differ; 6/38 same as PR10; candidate source base only. Existing native elicitor/Bronze verified by read, not wired into Target A."
     }
   ],
   "pipeline": {
@@ -191,7 +202,8 @@
     "P1-08 SeedEnvelope input detachment candidate is local only; requires full native integration",
     "Old Library v0.1.0 source archive differs from 32/38 PR10 canonical blobs; no wholesale transplant",
     "No native_integration acceptance files in exact PR10 Git tree; R2 package currently only init.py",
-    "Historical v0.1.0 archive has 11/12 mismatched core src/argo_dt modules at PR10 exact HEAD; historical reference only"
+    "Historical v0.1.0 archive has 11/12 mismatched core src/argo_dt modules at PR10 exact HEAD; historical reference only",
+    "Archive initial-base ancestry remains UNPROVEN (26 exact/12 divergent), and missing source/supersession must not be inferred."
   ],
   "next_packets": [
     {
@@ -210,17 +222,17 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "54adb9d383c9f587f2220d055a0707fbe146b6e8",
+  "control_head_sha": "d954eb33428849379c0d8929893f875178f5ba27",
   "latest_local_increment": {
-    "record": ".k2s0-runtime/evidence/20261011-run45-historical-38-file-manifest.json",
-    "classification": "VERIFIED_LOCAL_P0_02_38_FILE_HASH_LEDGER_HISTORICAL_ONLY",
-    "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
-    "artifact": "K2S0-run45-full-per-file-source-reconciliation.zip",
-    "artifact_sha256": "8d857b4d1bab65be400aee0d0b1230c8772fae609a7572aa1d5140af6640cbfd",
-    "source_archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
-    "manifest_sha256": "71a3110e14e7304d03e97da65dec6fa98c2547479e37d1d2bb06a90d75243cb1",
-    "checks": "38 file Git blobs compared; 15 historical native unittest green; no canonical native integration",
-    "independent_review": false
+    "record": ".k2s0-runtime/evidence/20261011-run46-initial-core-base-proximity.json",
+    "classification": "VERIFIED_LOCAL_PROVENANCE_INCREMENT_NOT_CODE_OR_13_STAGE_ACCEPTANCE",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "candidate_initial_sha": "8d60ca33abe201b93da4e1e23da73bd27240f062",
+    "original_archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "artifact": "K2S0-run46-source-base-proximity-audit.zip",
+    "artifact_sha256": "cb674e9b5a3a33b06ebb0623267ca548603b010c3c1b483d0f48130b6bcc05f8",
+    "checks": "38 immutable Git blob comparisons to first-core and PR10 trees, 15 historical tests pass; no native current integration or independent review",
+    "independently_verified": false
   },
   "append_only_records_reconciled": [
     "20261008-run13.json",
@@ -238,7 +250,8 @@
     "20261011-run42-historical-base-source-inventory.json",
     "20261011-run43-r2-private-history-parser.json",
     "20261011-run44-core-source-divergence.json",
-    "20261011-run45-historical-38-file-manifest.json"
+    "20261011-run45-historical-38-file-manifest.json",
+    "20261011-run46-initial-core-base-proximity.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -340,7 +353,7 @@
     "tracer_13_stages_not_collected": true,
     "exact_head_green": false
   },
-  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; read live HEAD for current ref",
+  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; resulting control HEAD must be re-read",
   "latest_source_archive_inventory": {
     "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
     "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
