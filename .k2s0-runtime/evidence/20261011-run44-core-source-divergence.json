@@ -1,0 +1,87 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "observed_at_utc": "2026-10-11T03:09:38.243Z",
+  "classification": "VERIFIED_P0_02_SOURCE_ARCHIVE_DIVERGENCE_NOT_NATIVE_INTEGRATION",
+  "package_ids": [
+    "P0-02",
+    "P0-03"
+  ],
+  "repository": "zhenrez/K2S0",
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+  "control_expected_head": "ec3a294168559ca3d7ab9640145859eadf543e02",
+  "control_expected_tree": "aac5475f8fed40c038e10f26971cf894159b45b9",
+  "source_archive": {
+    "name": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "verification": "ZIP CRC PASS; SHA256 matches earlier Run42 immutable archive",
+    "prior_run42_files": 38,
+    "prior_run42_exact": 6,
+    "prior_run42_mismatched": 32
+  },
+  "additional_core_code_reconciliation": {
+    "source_files_compared": 12,
+    "exact_pr10_blob_matches": 1,
+    "mismatches": 11,
+    "sole_exact_path": "src/argo_dt/policy.py",
+    "definition": "12 historical src/argo_dt/*.py from archive compared against exact PR10 Git blob object IDs; newly added source files excluded",
+    "method": "Git blob sha1 = sha1('blob '+byte_length+'\\0'+raw_file); compare to GitHub exact-head tree OIDs",
+    "classification": "HISTORICAL_REFERENCE_ONLY_NO_WHOLE_ARCHIVE_TRANSPLANT"
+  },
+  "canonical_tree_read": {
+    "regular_files": 88,
+    "canonical_test_modules": 10,
+    "src_r2d2_paths": [
+      "src/r2d2/__init__.py"
+    ],
+    "native_integration_paths": [],
+    "control_files_on_source_branch": 0
+  },
+  "checks": [
+    {
+      "command": "python /mnt/data/k2s0_run44/check_source_divergence.py",
+      "exit_code": 0,
+      "decisive_output": "ZIP CRC PASS\\nSOURCE SHA256 14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1\\nLIVE PR10 HEAD 455916b9bc0116d036e538cc7fdf4c5b127874c3\\nEXACT CORE SOURCE BLOBS 1 / 12\\nCHANGED CORE SOURCE BLOBS 11 / 12\\nRUN42 SOURCE ARCHIVE HASH MATCH True",
+      "runtime": "Python 3.13.5",
+      "report_sha256": "12728b348ab72d836187799a086a0128d8d36f8cb7d3202d1d2966de389cf9c4"
+    },
+    {
+      "command": "python -m compileall -q /mnt/data/k2s0_run44",
+      "exit_code": 0,
+      "runtime": "Python 3.13.5"
+    },
+    {
+      "command": "git ls-remote https://github.com/zhenrez/K2S0.git refs/heads/main refs/heads/dt/4-seed-compiler-projection refs/heads/runtime/k2s0-usable-v0-control",
+      "exit_code": 128,
+      "decisive_output": "fatal: unable to access 'https://github.com/zhenrez/K2S0.git/': Could not resolve host: github.com",
+      "result": "NO_CANONICAL_CHECKOUT"
+    },
+    {
+      "command": "python3.12 --version",
+      "exit_code": 127,
+      "decisive_output": "python3.12: command not found"
+    }
+  ],
+  "artifact": {
+    "name": "K2S0-run44-pr10-source-divergence.zip",
+    "sha256": "df77e1e68c90f255f149738f1ceea0bf280941a58235169a450485474be1a169"
+  },
+  "primary_handoff_source": {
+    "run16": "NOT_RETRIEVED",
+    "run17": "NOT_RETRIEVED",
+    "run19": "NOT_RETRIEVED",
+    "library_scope": "searched available Library ZIP listings and K2S0 folder, no match; recursive Google Drive Library listing unsupported; absence not proved"
+  },
+  "pr10": {
+    "state": "open/draft",
+    "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "ci72": "FAILURE",
+    "independent_review_count": 0
+  },
+  "tests_native_13_stage": "NOT_RUN",
+  "independently_verified_packages": 0,
+  "independently_accepted_stages": 0,
+  "product_percent": null,
+  "write_constraints": "Control-branch evidence only; no product-source mutation or permission denial retry",
+  "next_operation": "Recover complete exact-head checkout with an authorized source transport and Python3.12; recover Run16/17/19 original source; collect native integration tests with same fixture; independently review exact-head PR10 fix; no wholesale old ZIP transplant."
+}

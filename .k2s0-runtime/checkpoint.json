@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T02:40:16.707502+00:00",
+  "updated_at": "2026-10-11T03:09:38.243Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,13 +11,13 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "c053e5c615530784502ea890af6185a5ec8c06ed",
-    "control_parent_tree": "3dbffa816506a2a81c7297edc7b9474f456885aa"
+    "control_parent_sha": "ec3a294168559ca3d7ab9640145859eadf543e02",
+    "control_parent_tree": "aac5475f8fed40c038e10f26971cf894159b45b9"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
     "id": "P0-02-HISTORICAL-BASE-INVENTORY",
-    "phase": "immutable_filewise_reference_classified_not_native_source_recovery",
+    "phase": "VERIFIED_CORE_ARCHIVE_DIVERGENCE_1_OF_12_EXACT",
     "objective": "Prevent old full-archive transplant; recover missing Run09-22 source and exact native checkout",
     "owned_paths": [],
     "dependencies": [
@@ -25,7 +25,7 @@
       "complete_exact_git_checkout",
       "independent_reviewer"
     ],
-    "next_action": "Recover Run09–22 original source (especially 16/17/19), complete GitHub exact-head checkout and Python3.12; collect true native integration tests; reconcile new Run43 candidate only per-file after overlaps proven."
+    "next_action": "Recover complete exact-head checkout with an authorized source transport and Python3.12; recover Run16/17/19 original source; collect native integration tests with same fixture; independently review exact-head PR10 fix; no wholesale old ZIP transplant."
   },
   "evidence": [
     {
@@ -136,6 +136,14 @@
       "remote_record": ".k2s0-runtime/evidence/20261011-run43-r2-private-history-parser.json",
       "artifact": "K2S0-run43-r2-historical-parser-local-candidate.zip",
       "result": "12/12 local R2 parser tests pass with 0 skips, loss manifest + authorization input; 13-stage journey not run"
+    },
+    {
+      "type": "historical_core_archive_source_reconciliation",
+      "status": "CONFIRMED_LOCAL_FILE_HASH_COMPARISON_NOT_NATIVE_EXECUTION",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run44-core-source-divergence.json",
+      "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+      "observation": "12 historical core src/*.py Git blobs checked: 1 exact, 11 diverge; no wholesale transplant"
     }
   ],
   "pipeline": {
@@ -171,7 +179,8 @@
     "Partial canonical 23-test local suite GREEN does not satisfy 13-stage native integration",
     "P1-08 SeedEnvelope input detachment candidate is local only; requires full native integration",
     "Old Library v0.1.0 source archive differs from 32/38 PR10 canonical blobs; no wholesale transplant",
-    "No native_integration acceptance files in exact PR10 Git tree; R2 package currently only init.py"
+    "No native_integration acceptance files in exact PR10 Git tree; R2 package currently only init.py",
+    "Historical v0.1.0 archive has 11/12 mismatched core src/argo_dt modules at PR10 exact HEAD; historical reference only"
   ],
   "next_packets": [
     {
@@ -190,7 +199,7 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "c053e5c615530784502ea890af6185a5ec8c06ed",
+  "control_head_sha": "ec3a294168559ca3d7ab9640145859eadf543e02",
   "latest_local_increment": {
     "record": ".k2s0-runtime/evidence/20261011-run43-r2-private-history-parser.json",
     "classification": "LOCAL_FUNCTIONAL_R2_PARSER_CANDIDATE_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENT",
@@ -247,7 +256,8 @@
     "20261010-run41-seed-detachment-subprocess.json",
     "20261011-run42-closed-zip-sha256-correction.json",
     "20261011-run42-historical-base-source-inventory.json",
-    "20261011-run43-r2-private-history-parser.json"
+    "20261011-run43-r2-private-history-parser.json",
+    "20261011-run44-core-source-divergence.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -379,5 +389,17 @@
     "fully_integrated": false,
     "independent_review": false,
     "next_action": "Recover original Run09–22 source and complete exact PR10 checkout, compare new R2 candidate against recovered per-file deltas, run collected real native K2 integration on Python3.12, independently verify before promotion"
+  },
+  "latest_core_source_diff_audit": {
+    "remote_record": ".k2s0-runtime/evidence/20261011-run44-core-source-divergence.json",
+    "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "old_core_source_files": 12,
+    "exact_core_sources": 1,
+    "changed_core_sources": 11,
+    "local_bundle": "K2S0-run44-pr10-source-divergence.zip",
+    "local_bundle_sha256": "df77e1e68c90f255f149738f1ceea0bf280941a58235169a450485474be1a169",
+    "canonical_checkout_executable": false,
+    "python312_available": false
   }
 }
