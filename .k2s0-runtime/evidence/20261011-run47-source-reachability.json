@@ -1,0 +1,106 @@
+{
+  "schema": "k2s0.usable-v0.evidence/v1",
+  "record_id": "20261011-run47-source-reachability",
+  "timestamp_utc": "2026-10-11T09:18:08.637952Z",
+  "disposition": "VERIFIED_LOCAL_PROVENANCE_INCREMENT_NOT_NATIVE_CURRENT_ACCEPTANCE",
+  "authority": {
+    "repo": "zhenrez/K2S0",
+    "pr": 10,
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+    "control_expected_head": "a4d6276e762f1b06195bae1c0bbb1e7e63e1e700",
+    "control_parent_tree": "4720cc2ab8fd78bc2c38bc644186398147943ef7",
+    "ci72": "failure"
+  },
+  "recovery": {
+    "archive": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "original_files_hash_verified": 38,
+    "prior_initial_core_exact": 26,
+    "prior_initial_core_different": 12,
+    "prior_counts_not_recomputed": true,
+    "git_object_lookups": {
+      "retrievable": [
+        "CHANGELOG.md",
+        "VALIDATION.md",
+        "openapi/dt-v1.yaml",
+        "src/argo_dt/aggregate.py",
+        "src/argo_dt/compiler.py",
+        "src/argo_dt/event_store.py",
+        "src/argo_dt/service.py",
+        "src/argo_dt/sync.py",
+        "tests/test_dt_invariants.py"
+      ],
+      "returned_404": [
+        "README.md",
+        "docs/MERGE_CONTRACT.md",
+        "pyproject.toml"
+      ]
+    },
+    "branch_head_trees_inspected": 12,
+    "path_changing_commit_snapshots_inspected": 11,
+    "archive_object_matches_in_those_trees": 0,
+    "interpretation": "A Git object fetch proves readability of bytes, not tree membership, ancestry, authenticity, or supersession. A 404 does not prove prior source absence.",
+    "source_recovery": "Run16/17/19 original source NOT_RETRIEVED, scoped Library 80 ZIP item metadata and title-only search SEARCHED_NOT_FOUND",
+    "branch_aliases": {
+      "usable-v0/tracer-integration": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "implementation/historical-ai-parser": "62881ef8b7020df71c30ec910e8914f6895712ec",
+      "implementation/evidence-model": "62881ef8b7020df71c30ec910e8914f6895712ec",
+      "implementation/persistence-authority": "62881ef8b7020df71c30ec910e8914f6895712ec",
+      "tracer/golden-source-v0": "62881ef8b7020df71c30ec910e8914f6895712ec"
+    }
+  },
+  "checks": [
+    {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -v",
+      "environment": "historical archive, Python 3.13.5",
+      "exit_code": 0,
+      "collected": 15,
+      "passed": 15,
+      "skipped": 0,
+      "scope": "HISTORICAL_ONLY_NOT_CURRENT_NATIVE_INTEGRATION"
+    },
+    {
+      "command": "PYTHONPATH=src python -m argo_dt.cli demo",
+      "exit_code": 0,
+      "scope": "HISTORICAL_ONLY"
+    },
+    {
+      "command": "python -m compileall -q src tests scripts",
+      "exit_code": 0,
+      "scope": "HISTORICAL_ONLY"
+    },
+    {
+      "command": "command -v python3.12",
+      "exit_code": 1,
+      "scope": "LOCAL_RUNTIME_ABSENT"
+    },
+    {
+      "command": "git ls-remote https://github.com/zhenrez/K2S0.git refs/heads/dt/4-seed-compiler-projection",
+      "exit_code": 128,
+      "decisive": "Could not resolve host: github.com",
+      "scope": "LOCAL_READ_TRANSPORT_DNS"
+    }
+  ],
+  "artifact": {
+    "name": "K2S0-run47-historical-object-provenance.zip",
+    "sha256": "2e54e82e0f3693827fb72c215e27a4ed9f813676af52128857249236e05bc6b0",
+    "manifest_sha256": "ee91f306e742524517796a56fb19f739bb1b7213c1539f2eaf4aba5ceb5bc1c9"
+  },
+  "security": {
+    "personal_data": "NONE",
+    "product_mutators": 0,
+    "control_writer": 1,
+    "previous_source_write_safety_denial": "UNCHANGED_NOT_RETRIED"
+  },
+  "gate": {
+    "native_current_integration": "NOT_EXECUTED",
+    "verified_stages": 0,
+    "total_stages": 13,
+    "independently_verified_packages": 0,
+    "total_packages": 20,
+    "independent_reviewer": "NONE",
+    "current_exact_head_CI": "FAILED"
+  },
+  "next_operation": "Recover original Run16/17/19 source and complete canonical Python3.12 checkout; reconcile immutable source deltas and execute actual native 13-stage journey; separate independent review. No source write retry without changed permission cause."
+}

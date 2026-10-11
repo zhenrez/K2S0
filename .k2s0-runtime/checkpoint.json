@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T08:07:26.897Z",
+  "updated_at": "2026-10-11T09:18:08.637952Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,21 +11,22 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "d954eb33428849379c0d8929893f875178f5ba27",
-    "control_parent_tree": "6c0e4b45eec70e183b06b4d6a2d70abd03d22d1e"
+    "control_parent_sha": "a4d6276e762f1b06195bae1c0bbb1e7e63e1e700",
+    "control_parent_tree": "4720cc2ab8fd78bc2c38bc644186398147943ef7"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
-    "id": "P0-02-INITIAL-CORE-BASE-PROXIMITY",
-    "phase": "CANDIDATE_BASE_26_OF_38_BLOB_MATCHES_NOT_PROVEN_ANCESTRY",
-    "objective": "Attribute 12 archive deviations from original K2 core; preserve historical original; reconcile missing primary handoffs without transplant",
+    "id": "P0-02-SOURCE-REACHABILITY-PRIORITY",
+    "phase": "ARCHIVE_PROVENANCE_REFINED_NOT_SOURCE_RECOVERY",
+    "objective": "Recover Run16/17/19 original implementation source and complete exact-head checkout before native integration",
     "owned_paths": [],
     "dependencies": [
-      "Run16/17/19_original_source_NOT_RETRIEVED",
-      "complete_canonical_checkout",
-      "independent_review"
+      "Run16/17/19 primary source NOT_RETRIEVED",
+      "complete canonical checkout / Python 3.12",
+      "independent review",
+      "unchanged product-source write-safety denial"
     ],
-    "next_action": "Use the 26/38 early-base overlap to isolate and attribute the 12 original archive differences, recover Run16/17/19 primary handoffs, and integrate only independently verified per-file deltas onto the exact current canonical checkout; no wholesale archive copy."
+    "next_action": "Recover original Run16/17/19 source and complete canonical Python3.12 checkout; reconcile immutable source deltas and execute actual native 13-stage journey; separate independent review. No source write retry without changed permission cause."
   },
   "evidence": [
     {
@@ -166,6 +167,14 @@
       "artifact": "K2S0-run46-source-base-proximity-audit.zip",
       "artifact_sha256": "cb674e9b5a3a33b06ebb0623267ca548603b010c3c1b483d0f48130b6bcc05f8",
       "observation": "26/38 old ZIP blobs identical to original core (2026-09-04); 12 differ; 6/38 same as PR10; candidate source base only. Existing native elicitor/Bronze verified by read, not wired into Target A."
+    },
+    {
+      "type": "source_archive_git_object_reachability",
+      "status": "CONFIRMED_GIT_OBJECT_LOOKUPS_NOT_PROVEN_COMMIT_ANCESTRY",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run47-source-reachability.json",
+      "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+      "observation": "9/12 variant Git blobs retrievable; 3 returned 404; 0 matched checked heads/commit snapshots. 38 archive hashes valid and historical 15 tests pass; not canonical Target A."
     }
   ],
   "pipeline": {
@@ -222,16 +231,15 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "d954eb33428849379c0d8929893f875178f5ba27",
+  "control_head_sha": "a4d6276e762f1b06195bae1c0bbb1e7e63e1e700",
   "latest_local_increment": {
-    "record": ".k2s0-runtime/evidence/20261011-run46-initial-core-base-proximity.json",
-    "classification": "VERIFIED_LOCAL_PROVENANCE_INCREMENT_NOT_CODE_OR_13_STAGE_ACCEPTANCE",
+    "record": ".k2s0-runtime/evidence/20261011-run47-source-reachability.json",
+    "classification": "VERIFIED_LOCAL_PROVENANCE_INCREMENT_NOT_NATIVE_CURRENT_ACCEPTANCE",
     "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
-    "candidate_initial_sha": "8d60ca33abe201b93da4e1e23da73bd27240f062",
-    "original_archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
-    "artifact": "K2S0-run46-source-base-proximity-audit.zip",
-    "artifact_sha256": "cb674e9b5a3a33b06ebb0623267ca548603b010c3c1b483d0f48130b6bcc05f8",
-    "checks": "38 immutable Git blob comparisons to first-core and PR10 trees, 15 historical tests pass; no native current integration or independent review",
+    "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "artifact": "K2S0-run47-historical-object-provenance.zip",
+    "artifact_sha256": "2e54e82e0f3693827fb72c215e27a4ed9f813676af52128857249236e05bc6b0",
+    "checks": "38 original files rehashed; 9 Git objects retrievable, 3 404; 0 matches in checked branch/history tree snapshots; historical unittest 15/15, no canonical integration",
     "independently_verified": false
   },
   "append_only_records_reconciled": [
@@ -251,7 +259,8 @@
     "20261011-run43-r2-private-history-parser.json",
     "20261011-run44-core-source-divergence.json",
     "20261011-run45-historical-38-file-manifest.json",
-    "20261011-run46-initial-core-base-proximity.json"
+    "20261011-run46-initial-core-base-proximity.json",
+    "20261011-run47-source-reachability.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -353,7 +362,7 @@
     "tracer_13_stages_not_collected": true,
     "exact_head_green": false
   },
-  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; resulting control HEAD must be re-read",
+  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; result re-read from GitHub",
   "latest_source_archive_inventory": {
     "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
     "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
