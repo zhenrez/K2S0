@@ -1,0 +1,91 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "recorded_at": "2026-10-11T00:46:11.788Z",
+  "repository": "zhenrez/K2S0",
+  "control_expected_parent": "aca6ef33ab00059c44a8f16e38d2c41931b7795d",
+  "control_expected_tree": "357a5913e410016fa16a3ee84a91a0a499cfffd0",
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+  "classification": "VERIFIED_INCREMENT_SOURCE_ARCHIVE_INVENTORY_LOCAL_COMPONENT_REPLAY_NO_PRODUCT_MUTATION",
+  "active_packages": [
+    "P0-01",
+    "P0-02",
+    "P0-03",
+    "P1-07",
+    "P3-01"
+  ],
+  "authority_refs": {
+    "pull_request": "https://github.com/zhenrez/K2S0/pull/10",
+    "canonical_tree": "https://api.github.com/repos/zhenrez/K2S0/git/trees/455916b9bc0116d036e538cc7fdf4c5b127874c3?recursive=1",
+    "historical_library_archive": "/ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "preceding_control_sha": "aca6ef33ab00059c44a8f16e38d2c41931b7795d"
+  },
+  "archived_source": {
+    "name": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "files": 38,
+    "exact_current_git_blob_matches": 6,
+    "mismatches": 32,
+    "base_commit": "UNKNOWN",
+    "disposition": "HISTORICAL_REFERENCE_ONLY_NO_WHOLE_ARCHIVE_TRANSPLANT",
+    "full_manifest_sha256": "7084a20eee6d84bd6bac884846ea7cbcd2465df803ac5c998364b15ec131d8fc",
+    "local_bundle": "K2S0-run42-historical-base-reconciliation.zip",
+    "bundle_sha256": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d"
+  },
+  "source_layout": {
+    "canonical_tree_entries": 111,
+    "native_integration_collected": false,
+    "native_integration_files_in_tree": 0,
+    "r2d2_package_only_init": true,
+    "k2_methods_confirmed": [
+      "propose_claim",
+      "review_claim",
+      "plan_elicitation",
+      "record_elicitation_response",
+      "issue_projection"
+    ],
+    "K2_public_facade_existing": true
+  },
+  "local_tests": {
+    "python": "3.13.5",
+    "source_profile": "PARTIAL_GIT_BLOB_VERIFIED_NOT_COMPLETE_CHECKOUT",
+    "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+    "RED": {
+      "exit": 1,
+      "collected": 14,
+      "failures": 6,
+      "errors": 4,
+      "log_sha256": "74d563ba6f7e7cf2d509399f148745830bfd763d29d8738e88a3bebebb98fd4e"
+    },
+    "GREEN": {
+      "exit": 0,
+      "collected": 14,
+      "skips": 0,
+      "log_sha256": "ba3d6c2cdfe4c09ad36d81b6710b216d0459a60a5b36f117f5698dfe7a7bf6c2"
+    },
+    "patch_sha256": "89a91452d301c04a7ccaabc64a63a65aaffca077874cd5c2590fa01afa6785b3",
+    "compileall": "PASS",
+    "full_native_integration": "NOT_EXECUTED"
+  },
+  "ci": {
+    "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "run": 72,
+    "run_id": 37682402540,
+    "conclusion": "failure",
+    "historical_native_tests": "109/110 pass; one strict-sequence failure; later checks skipped"
+  },
+  "primary_run09_22_sources": "NOT_RETRIEVED",
+  "primary_run16_17_19_sources": "NOT_RETRIEVED",
+  "independent_review": "NOT_OBTAINED",
+  "independent_work_packages": 0,
+  "independent_accepted_stages": 0,
+  "product_percentage": null,
+  "work_ownership": {
+    "control_branch_writer": "CURRENT_EXECUTION_ONE_WRITER",
+    "product_paths_mutated": [],
+    "independent_workers": 0
+  },
+  "blocking_cause": "Product branch mutation safety denial unchanged; complete current checkout and Python3.12 unavailable; missing primary handoff source and independent verifier",
+  "next_operation": "Recover actual Run09–22 source including Run16/17/19; reconstruct exact canonical checkout from GitHub tree without replacing 32 mismatched files; collect real tests/native_integration under tests; run Python3.12 full CI exact candidate; seek independent exact-head review before PR10 merge.",
+  "boundaries": "No personal data, raw exports, credentials, source changes, simulated receipts, or AI DevKit use."
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-10T23:06:00Z",
+  "updated_at": "2026-10-11T00:46:11.788Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,21 +11,21 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "2f6d7b074c7eaf6409861cb58433277c0a467671",
-    "control_parent_tree": "118c674713edc717fa5c0cf101fbeba45b2e2b4f"
+    "control_parent_sha": "aca6ef33ab00059c44a8f16e38d2c41931b7795d",
+    "control_parent_tree": "357a5913e410016fa16a3ee84a91a0a499cfffd0"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
-    "id": "P0-01-FULL-NATIVE-INTEGRATION",
-    "phase": "partial_source_replay_only",
-    "objective": "Reconcile exact-head PR10 repair with fully canonical native integration under Python3.12",
+    "id": "P0-02-HISTORICAL-BASE-INVENTORY",
+    "phase": "immutable_filewise_reference_classified_not_native_source_recovery",
+    "objective": "Prevent old full-archive transplant; recover missing Run09-22 source and exact native checkout",
     "owned_paths": [],
     "dependencies": [
-      "complete_checkout",
-      "per_file_source_recovery",
-      "independent_verifier"
+      "missing_primary_handoffs",
+      "complete_exact_git_checkout",
+      "independent_reviewer"
     ],
-    "next_action": "Native K2 public facade+SQLite baseline already executed historically in CI #72 (109/110 PASS); staged 13-stage tracer NOT collected. Recover source and add native_integration tests under canonical tests discovery; run corrected exact-head Python3.12 CI and independent review. Product branch write safety denial unchanged."
+    "next_action": "Recover actual Run09–22 source including Run16/17/19; reconstruct exact canonical checkout from GitHub tree without replacing 32 mismatched files; collect real tests/native_integration under tests; run Python3.12 full CI exact candidate; seek independent exact-head review before PR10 merge."
   },
   "evidence": [
     {
@@ -112,6 +112,14 @@
       "run_id": 37682402540,
       "job_id": 113001524503,
       "observation": "GitHub Actions Python3.12 110 collected, 109 passed, one strict-sequence failure; public K2 facade/SQLite tests passed"
+    },
+    {
+      "type": "historical_archive_immutable_comparison",
+      "status": "CONFIRMED_LOCAL_HASH_COMPARISON_NOT_CODE_INTEGRATION",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
+      "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+      "observation": "38 archive files, 6 exact canonical blobs, 32 differ; historical source is not Run09–22 implementation handoff"
     }
   ],
   "pipeline": {
@@ -145,7 +153,9 @@
     "Run37 nested-alias candidate and Run38 replay candidate share public/contracts.py; require file-level integration on canonical head",
     "Run39 candidate is not an authoritative merge of Run37/38; original source artifacts NOT_RETRIEVED",
     "Partial canonical 23-test local suite GREEN does not satisfy 13-stage native integration",
-    "P1-08 SeedEnvelope input detachment candidate is local only; requires full native integration"
+    "P1-08 SeedEnvelope input detachment candidate is local only; requires full native integration",
+    "Old Library v0.1.0 source archive differs from 32/38 PR10 canonical blobs; no wholesale transplant",
+    "No native_integration acceptance files in exact PR10 Git tree; R2 package currently only init.py"
   ],
   "next_packets": [
     {
@@ -164,7 +174,7 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "2f6d7b074c7eaf6409861cb58433277c0a467671",
+  "control_head_sha": "aca6ef33ab00059c44a8f16e38d2c41931b7795d",
   "latest_local_increment": {
     "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
     "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
@@ -219,16 +229,17 @@
   },
   "append_only_records_reconciled": [
     "20261008-run13.json",
-    "20261008-run16-question.json",
     "20261008-run16-final.json",
+    "20261008-run16-question.json",
     "20261008-run17-composition.json",
     "20261008-run19-consent-gate.json",
     "20261010-run37-admission-alias-guard.json",
     "20261010-run38-replay-wire-boolean.json",
     "20261010-run39-local-boundary-reconciliation.json",
     "20261010-run40-component-replay-audit.json",
+    "20261010-run41-native-ci-baseline-reconciliation.json",
     "20261010-run41-seed-detachment-subprocess.json",
-    "20261010-run41-native-ci-baseline-reconciliation.json"
+    "20261011-run42-historical-base-source-inventory.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -329,5 +340,19 @@
     "public_facade_native_passed": true,
     "tracer_13_stages_not_collected": true,
     "exact_head_green": false
+  },
+  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; current remote HEAD must be read live",
+  "latest_source_archive_inventory": {
+    "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
+    "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "archive_name": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "files": 38,
+    "unchanged": 6,
+    "mismatched": 32,
+    "source_base": "UNKNOWN",
+    "disposition": "HISTORICAL_REFERENCE_ONLY_NO_WHOLE_ARCHIVE_TRANSPLANT",
+    "local_artifact": "K2S0-run42-historical-base-reconciliation.zip",
+    "bundle_sha256": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d"
   }
 }
