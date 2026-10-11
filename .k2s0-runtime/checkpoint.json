@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T00:48:34.513Z",
+  "updated_at": "2026-10-11T02:40:16.707502+00:00",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,8 +11,8 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "3c104fc5fd6c4143e88ae7e0e090a13e4964650f",
-    "control_parent_tree": "e393ee653f362f4c6736bdf4bb4ca4ea97c0a9aa"
+    "control_parent_sha": "c053e5c615530784502ea890af6185a5ec8c06ed",
+    "control_parent_tree": "3dbffa816506a2a81c7297edc7b9474f456885aa"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
@@ -25,7 +25,7 @@
       "complete_exact_git_checkout",
       "independent_reviewer"
     ],
-    "next_action": "Recover actual Run09–22 source including Run16/17/19; reconstruct exact canonical checkout from GitHub tree without replacing 32 mismatched files; collect real tests/native_integration under tests; run Python3.12 full CI exact candidate; seek independent exact-head review before PR10 merge."
+    "next_action": "Recover Run09–22 original source (especially 16/17/19), complete GitHub exact-head checkout and Python3.12; collect true native integration tests; reconcile new Run43 candidate only per-file after overlaps proven."
   },
   "evidence": [
     {
@@ -128,6 +128,14 @@
       "observation": "Run42 bundle SHA fixed from incomplete (open) ZIP to final closed ZIP; source archive SHA and 6/38 comparison unaffected",
       "old_sha256": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d",
       "final_sha256": "b8799c09e14194decb9dcb14be933bd51ef5403145b0d493d97779b3d7050056"
+    },
+    {
+      "type": "local_private_source_parser",
+      "status": "locally_executed_not_native_k2_not_independently_verified",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run43-r2-private-history-parser.json",
+      "artifact": "K2S0-run43-r2-historical-parser-local-candidate.zip",
+      "result": "12/12 local R2 parser tests pass with 0 skips, loss manifest + authorization input; 13-stage journey not run"
     }
   ],
   "pipeline": {
@@ -182,58 +190,48 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "3c104fc5fd6c4143e88ae7e0e090a13e4964650f",
+  "control_head_sha": "c053e5c615530784502ea890af6185a5ec8c06ed",
   "latest_local_increment": {
-    "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
-    "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
+    "record": ".k2s0-runtime/evidence/20261011-run43-r2-private-history-parser.json",
+    "classification": "LOCAL_FUNCTIONAL_R2_PARSER_CANDIDATE_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENT",
     "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
-    "patch_sha256": "97a5ea71e3d5437ba902dc7f47ee73f850f2b67367a6c6839f259e0ccf7c8e76",
-    "artifact": "K2S0-usable-v0-run39-reconciled-boundary-candidate.zip",
-    "artifact_sha256": "a6560aba79aee12edd66846ec97752eb43ca9ea62fd398cb1caf74b14d74ec32",
+    "patch_sha256": "9812b6617fe9adbd4dab03d2611472851e82a44dee8b90dc48cd62da012ef378",
+    "artifact": "K2S0-run43-r2-historical-parser-local-candidate.zip",
+    "artifact_sha256": "ce53ce2abb35a8fa5b859344da2dc2e8e5ce6a5237fbebee4eb20be81fa67fec",
     "checks": [
       {
-        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "runtime": "Python 3.13.5",
         "phase": "RED",
-        "source": "partial canonical exact Git-blob original with Run36 strict-int fix; 9 new boundary tests",
+        "collected": 11,
+        "errors": 2,
         "exit_code": 1,
-        "collected": 23,
-        "failures": 21,
-        "log_sha256": "5aea1c8fa4f32399f5d3ad97605ffdc395c47057316c007a0905186567ddabcd"
+        "log_sha256": "e8f948afdf5e57be5533df46ace56ed121ff7c9c4f2fe5213a0ff4997cb3ca02"
       },
       {
-        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
-        "phase": "GREEN",
-        "source": "identical partial source after replay+alias repairs",
-        "exit_code": 0,
-        "collected": 23,
+        "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "runtime": "Python 3.13.5",
+        "phase": "FINAL_GREEN",
+        "collected": 12,
         "skips": 0,
-        "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
-      },
-      {
-        "cmd": "git apply --check ../integrated_source_fix.patch",
         "exit_code": 0,
-        "source": "exact original canonical source modules"
+        "log_sha256": "1dce22a72a32634fc751adb99456ceb86d26d3576c98287fac944b7a6d19d2b7"
       },
       {
-        "cmd": "git apply ../integrated_source_fix.patch",
+        "command": "python -m compileall -q src tests",
+        "runtime": "Python 3.13.5",
         "exit_code": 0
       },
       {
-        "cmd": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
-        "phase": "REBUILD_GREEN",
+        "command": "git apply --check <candidate patch> && git apply <candidate patch> && PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+        "runtime": "Python 3.13.5",
         "exit_code": 0,
-        "collected": 23,
-        "skips": 0,
-        "log_sha256": "433dc36a9fab12d5114956c9fb328c12cbc80a8937cc2dfd88c3cf418637fbb7"
-      },
-      {
-        "cmd": "PYTHONPATH=src:build/grpc python -m compileall -q src tests",
-        "exit_code": 0
+        "tests_collected": 12,
+        "scope": "isolated canonical-like partial tree with exact canonical R2 init"
       }
     ],
     "independent_review": false,
-    "not_authoritative_reconciliation": true,
-    "prior_local_increment": ".k2s0-runtime/evidence/20261010-run38-replay-wire-boolean.json"
+    "source_overlap": "Run09-22 originals not retrieved, no canonical integration"
   },
   "append_only_records_reconciled": [
     "20261008-run13.json",
@@ -248,7 +246,8 @@
     "20261010-run41-native-ci-baseline-reconciliation.json",
     "20261010-run41-seed-detachment-subprocess.json",
     "20261011-run42-closed-zip-sha256-correction.json",
-    "20261011-run42-historical-base-source-inventory.json"
+    "20261011-run42-historical-base-source-inventory.json",
+    "20261011-run43-r2-private-history-parser.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
@@ -365,5 +364,20 @@
     "bundle_sha256": "b8799c09e14194decb9dcb14be933bd51ef5403145b0d493d97779b3d7050056",
     "superseded_incomplete_bundle_hash": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d",
     "correction_record": ".k2s0-runtime/evidence/20261011-run42-closed-zip-sha256-correction.json"
+  },
+  "control_head_sha_semantics": "parent read before this checkpoint write; resolve resulting head from live GitHub ref",
+  "active_secondary_packet": {
+    "id": "P1-01/P1-02",
+    "phase": "local_parser_candidate_functionally_tested",
+    "owned_paths": [
+      "src/r2d2/historical.py",
+      "tests/test_historical_import_native.py",
+      "fixtures/history-export.synthetic.json"
+    ],
+    "source_ref": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+    "tests_collected": 12,
+    "fully_integrated": false,
+    "independent_review": false,
+    "next_action": "Recover original Run09–22 source and complete exact PR10 checkout, compare new R2 candidate against recovered per-file deltas, run collected real native K2 integration on Python3.12, independently verify before promotion"
   }
 }

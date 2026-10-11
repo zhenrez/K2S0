@@ -1,0 +1,70 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "observed_at": "2026-10-11T02:40:16.707502+00:00",
+  "classification": "LOCAL_FUNCTIONAL_R2_PARSER_CANDIDATE_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENT",
+  "package_ids": [
+    "P1-01",
+    "P1-02"
+  ],
+  "status": "claimed_local_only",
+  "repository": "zhenrez/K2S0",
+  "source_branch": "dt/4-seed-compiler-projection",
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+  "control_parent_sha": "c053e5c615530784502ea890af6185a5ec8c06ed",
+  "control_parent_tree": "3dbffa816506a2a81c7297edc7b9474f456885aa",
+  "owned_paths": [
+    "src/r2d2/historical.py",
+    "tests/test_historical_import_native.py",
+    "fixtures/history-export.synthetic.json"
+  ],
+  "unchanged_canonical_r2_init_sha": "10de559a6a6831c49272b288eb9456f00b168044",
+  "candidate_patch_sha256": "9812b6617fe9adbd4dab03d2611472851e82a44dee8b90dc48cd62da012ef378",
+  "candidate_source_sha256": "8d77a7841c4b54558bd2b1fcbfa5b037f77bd0c6d39030177581e798d7fa63f2",
+  "fixture_sha256": "b77d5c8f317f074faf1f71f4d7c8545af323d53351c27d5b3b4df4a24a5f7878",
+  "local_bundle": "K2S0-run43-r2-historical-parser-local-candidate.zip",
+  "bundle_sha256": "ce53ce2abb35a8fa5b859344da2dc2e8e5ce6a5237fbebee4eb20be81fa67fec",
+  "tests": [
+    {
+      "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "runtime": "Python 3.13.5",
+      "phase": "RED",
+      "collected": 11,
+      "errors": 2,
+      "exit_code": 1,
+      "log_sha256": "e8f948afdf5e57be5533df46ace56ed121ff7c9c4f2fe5213a0ff4997cb3ca02"
+    },
+    {
+      "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "runtime": "Python 3.13.5",
+      "phase": "FINAL_GREEN",
+      "collected": 12,
+      "skips": 0,
+      "exit_code": 0,
+      "log_sha256": "1dce22a72a32634fc751adb99456ceb86d26d3576c98287fac944b7a6d19d2b7"
+    },
+    {
+      "command": "python -m compileall -q src tests",
+      "runtime": "Python 3.13.5",
+      "exit_code": 0
+    },
+    {
+      "command": "git apply --check <candidate patch> && git apply <candidate patch> && PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
+      "runtime": "Python 3.13.5",
+      "exit_code": 0,
+      "tests_collected": 12,
+      "scope": "isolated canonical-like partial tree with exact canonical R2 init"
+    }
+  ],
+  "limitations": [
+    "RED and GREEN suites are not identical: one additional authorization-binding test was added later",
+    "No complete exact-head canonical checkout or Python3.12 in local executor",
+    "No true native K2 service, SQLite restart, user permission/consent attestation, encryption, revocation or independent consumer exercised",
+    "This is a new isolated candidate; Run09–22 original source overlap is UNKNOWN",
+    "Identity and source-read authorization supplied by test harness, not authenticated host",
+    "No product-branch write; PR10 CI remains failed; no independent reviewer"
+  ],
+  "accepted_native_13_stage_count": 0,
+  "independently_verified_package_count": 0,
+  "next_operation": "Recover original Run09–22 source and complete exact PR10 checkout, compare new R2 candidate against recovered per-file deltas, run collected real native K2 integration on Python3.12, independently verify before promotion"
+}
