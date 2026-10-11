@@ -1,0 +1,26 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "created_at": "2026-10-11T00:48:34.513Z",
+  "classification": "APPEND_ONLY_ARTIFACT_HASH_CORRECTION",
+  "correction_target": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
+  "correction_field": "archived_source.bundle_sha256",
+  "previous_value": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d",
+  "correct_value": "b8799c09e14194decb9dcb14be933bd51ef5403145b0d493d97779b3d7050056",
+  "explanation": "The prior SHA-256 was measured while ZipFile was still open, before the central directory/footer had been written. The closed ZIP is 12,552 bytes, contains eight entries, and passed CRC/testzip with no bad entry. Original primary archive SHA and source-file comparisons are unchanged.",
+  "validation": {
+    "command": "python ZipFile.testzip() and SHA256(closed ZIP)",
+    "result": "PASS",
+    "entry_count": 8,
+    "closed_zip_bytes": 12552,
+    "zip_crc_ok": true,
+    "source_archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "comparison_manifest_sha256": "7084a20eee6d84bd6bac884846ea7cbcd2465df803ac5c998364b15ec131d8fc"
+  },
+  "source_commit": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+  "owner": "one scoped control writer",
+  "independent_review": false,
+  "product_mutation": false,
+  "independent_accepted_stages": 0,
+  "independent_verified_work_packages": 0
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T00:46:11.788Z",
+  "updated_at": "2026-10-11T00:48:34.513Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,8 +11,8 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "aca6ef33ab00059c44a8f16e38d2c41931b7795d",
-    "control_parent_tree": "357a5913e410016fa16a3ee84a91a0a499cfffd0"
+    "control_parent_sha": "3c104fc5fd6c4143e88ae7e0e090a13e4964650f",
+    "control_parent_tree": "e393ee653f362f4c6736bdf4bb4ca4ea97c0a9aa"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
@@ -120,6 +120,14 @@
       "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
       "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
       "observation": "38 archive files, 6 exact canonical blobs, 32 differ; historical source is not Run09–22 implementation handoff"
+    },
+    {
+      "type": "artifact_finalization_hash_correction",
+      "status": "CONFIRMED_LOCAL_CLOSED_ZIP_CHECK",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run42-closed-zip-sha256-correction.json",
+      "observation": "Run42 bundle SHA fixed from incomplete (open) ZIP to final closed ZIP; source archive SHA and 6/38 comparison unaffected",
+      "old_sha256": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d",
+      "final_sha256": "b8799c09e14194decb9dcb14be933bd51ef5403145b0d493d97779b3d7050056"
     }
   ],
   "pipeline": {
@@ -174,7 +182,7 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "aca6ef33ab00059c44a8f16e38d2c41931b7795d",
+  "control_head_sha": "3c104fc5fd6c4143e88ae7e0e090a13e4964650f",
   "latest_local_increment": {
     "record": ".k2s0-runtime/evidence/20261010-run39-local-boundary-reconciliation.json",
     "classification": "LOCAL_NATIVE_COMPONENT_RED_GREEN_NOT_FULL_INTEGRATION_NOT_INDEPENDENTLY_VERIFIED",
@@ -239,6 +247,7 @@
     "20261010-run40-component-replay-audit.json",
     "20261010-run41-native-ci-baseline-reconciliation.json",
     "20261010-run41-seed-detachment-subprocess.json",
+    "20261011-run42-closed-zip-sha256-correction.json",
     "20261011-run42-historical-base-source-inventory.json"
   ],
   "latest_audit": {
@@ -341,7 +350,7 @@
     "tracer_13_stages_not_collected": true,
     "exact_head_green": false
   },
-  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; current remote HEAD must be read live",
+  "control_head_sha_scope": "EXPECTED_HEAD_BEFORE_ATOMIC_COMMIT; read live HEAD for current ref",
   "latest_source_archive_inventory": {
     "remote_record": ".k2s0-runtime/evidence/20261011-run42-historical-base-source-inventory.json",
     "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
@@ -353,6 +362,8 @@
     "source_base": "UNKNOWN",
     "disposition": "HISTORICAL_REFERENCE_ONLY_NO_WHOLE_ARCHIVE_TRANSPLANT",
     "local_artifact": "K2S0-run42-historical-base-reconciliation.zip",
-    "bundle_sha256": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d"
+    "bundle_sha256": "b8799c09e14194decb9dcb14be933bd51ef5403145b0d493d97779b3d7050056",
+    "superseded_incomplete_bundle_hash": "13eae559c464e47823e9d069cfb5c80d2340ba3fd091c41761f07cfb6ff83d8d",
+    "correction_record": ".k2s0-runtime/evidence/20261011-run42-closed-zip-sha256-correction.json"
   }
 }
