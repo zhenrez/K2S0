@@ -1,0 +1,88 @@
+{
+  "schema_version": "k2s0.usable-v0.evidence/v1",
+  "observed_at_utc": "2026-10-11T03:39:54.328Z",
+  "classification": "VERIFIED_LOCAL_P0_02_38_FILE_HASH_LEDGER_HISTORICAL_ONLY",
+  "package_ids": [
+    "P0-02",
+    "P0-03"
+  ],
+  "repository": "zhenrez/K2S0",
+  "source_sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+  "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
+  "control_expected_head": "54adb9d383c9f587f2220d055a0707fbe146b6e8",
+  "control_expected_tree": "f518d5c904faf3b000973b5e49acb2b95b9563cc",
+  "input_archive": {
+    "name": "ARGO-Digital-Twin-dt-branch-v0.1.0.zip",
+    "sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "source_base_commit": "UNKNOWN_NOT_RETRIEVED",
+    "historical_reference_only": true
+  },
+  "exact_source_compare": {
+    "count": 38,
+    "exact": 6,
+    "divergent": 32,
+    "canonical_regular_files": 88,
+    "canonical_only_relative_to_historical": 50,
+    "full_manifest_sha256": "71a3110e14e7304d03e97da65dec6fa98c2547479e37d1d2bb06a90d75243cb1",
+    "full_manifest_artifact": "K2S0-run45-full-per-file-source-reconciliation.zip",
+    "full_manifest_artifact_sha256": "8d857b4d1bab65be400aee0d0b1230c8772fae609a7572aa1d5140af6640cbfd",
+    "exact_paths": [
+      ".gitignore",
+      "src/argo_dt/policy.py",
+      "policies/rego/dt_projection.rego",
+      "policies/rego/dt_action.rego",
+      "schemas/action-envelope-v1.schema.json",
+      "schemas/event-envelope-v1.schema.json"
+    ],
+    "method": "Git blob SHA1 of archived bytes compared to immutable PR10 tree object IDs; archive SHA256 + CRC; complete per-file source-size and SHA256 ledger in local ZIP"
+  },
+  "historical_tests": [
+    {
+      "command": "PYTHONPATH=src python -m unittest discover -s tests -v",
+      "cwd": "historical dt-branch/ v0.1.0, NOT PR10 canonical",
+      "exit_code": 0,
+      "tests": 15,
+      "skips": 0,
+      "decisive_output": "Ran 15 tests in 0.017s\nOK",
+      "log_sha256": null,
+      "log_sha256_status": "Log available in checksummed local ZIP; log hash per local run45_evidence_candidate.json"
+    },
+    {
+      "command": "PYTHONPATH=src python -m argo_dt.cli demo",
+      "cwd": "historical dt-branch/ v0.1.0, NOT PR10 canonical",
+      "exit_code": 0
+    },
+    {
+      "command": "python -m compileall -q src tests scripts",
+      "cwd": "historical dt-branch/ v0.1.0, NOT PR10 canonical",
+      "exit_code": 0
+    }
+  ],
+  "blocked_execution": {
+    "canonical_checkout": "NOT_RECOVERED; git ls-remote exit128 DNS failure",
+    "python312": "NOT_AVAILABLE IN LOCAL RUNNER",
+    "original_Run16_17_19_source": "NOT_RETRIEVED",
+    "source_write": "PR10 mutation safety denial unchanged; not retried",
+    "native_13_stage": "NOT_RUN",
+    "reviewer": "NONE"
+  },
+  "searches": {
+    "google_drive": [
+      "K2S0",
+      "Run16",
+      "Run17",
+      "Run19",
+      "ARGO-Digital-Twin",
+      "K2S0-usable-v0"
+    ],
+    "result": "0 matching items returned; NOT absence proof",
+    "library": "historical v0.1.0 archive recovered; Run16/17/19 handoff files NOT_RETRIEVED"
+  },
+  "security": "No raw personal data, credentials, real answers or exports included.",
+  "assertion_boundaries": "Historical tests are not accepted canonical native integration. File hash equality is not provenance or source supersession. Do not transplant old ZIP wholesale.",
+  "independent_review": false,
+  "independently_accepted_stages": 0,
+  "independently_verified_packages": 0,
+  "product_completion_percent": null,
+  "next_operation": "Recover Run16/17/19 original source and complete exact-head canonical checkout; run canonical native integration tests and PR10 Python3.12 RED/GREEN; obtain independent exact-head review."
+}

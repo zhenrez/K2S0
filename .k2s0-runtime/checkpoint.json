@@ -1,6 +1,6 @@
 {
   "schema_version": "k2s0.usable-v0.runtime/v1",
-  "updated_at": "2026-10-11T03:09:38.243Z",
+  "updated_at": "2026-10-11T03:39:54.328Z",
   "authority": {
     "repository": "zhenrez/K2S0",
     "control_branch": "runtime/k2s0-usable-v0-control",
@@ -11,21 +11,21 @@
     "ci_run_number": 72,
     "ci_conclusion": "failure",
     "source_tree": "b376b30de075f25072ad5aaf0c075239b4d54cd5",
-    "control_parent_sha": "ec3a294168559ca3d7ab9640145859eadf543e02",
-    "control_parent_tree": "aac5475f8fed40c038e10f26971cf894159b45b9"
+    "control_parent_sha": "54adb9d383c9f587f2220d055a0707fbe146b6e8",
+    "control_parent_tree": "f518d5c904faf3b000973b5e49acb2b95b9563cc"
   },
   "product_target": "Usable K2S0 v0: sanitized historical source -> R2D2 -> normalized evidence -> argo_dt.public -> persisted representation -> deficits/lineage -> SeedEnvelope -> independent consumer; question answer and selective disclosure",
   "active_packet": {
-    "id": "P0-02-HISTORICAL-BASE-INVENTORY",
-    "phase": "VERIFIED_CORE_ARCHIVE_DIVERGENCE_1_OF_12_EXACT",
-    "objective": "Prevent old full-archive transplant; recover missing Run09-22 source and exact native checkout",
+    "id": "P0-02-HISTORICAL-COMPLETE-38-FILE-MANIFEST",
+    "phase": "VERIFIED_LOCAL_38_FILE_HASH_INVENTORY_NOT_RUN09_22_SOURCE_RECOVERY",
+    "objective": "Preserve 38-file exact/differential archive classification; do not transplant historical ZIP; recover required primary handoffs and canonical native checkout",
     "owned_paths": [],
     "dependencies": [
       "missing_primary_handoffs",
       "complete_exact_git_checkout",
       "independent_reviewer"
     ],
-    "next_action": "Recover complete exact-head checkout with an authorized source transport and Python3.12; recover Run16/17/19 original source; collect native integration tests with same fixture; independently review exact-head PR10 fix; no wholesale old ZIP transplant."
+    "next_action": "Recover Run16/17/19 original source and complete exact-head canonical checkout; run canonical native integration tests and PR10 Python3.12 RED/GREEN; obtain independent exact-head review."
   },
   "evidence": [
     {
@@ -144,6 +144,17 @@
       "remote_record": ".k2s0-runtime/evidence/20261011-run44-core-source-divergence.json",
       "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
       "observation": "12 historical core src/*.py Git blobs checked: 1 exact, 11 diverge; no wholesale transplant"
+    },
+    {
+      "type": "historical_complete_file_reconciliation",
+      "status": "CONFIRMED_LOCAL_HASH_LEDGER_NOT_CODE_INTEGRATION",
+      "sha": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
+      "remote_record": ".k2s0-runtime/evidence/20261011-run45-historical-38-file-manifest.json",
+      "archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+      "artifact": "K2S0-run45-full-per-file-source-reconciliation.zip",
+      "artifact_sha256": "8d857b4d1bab65be400aee0d0b1230c8772fae609a7572aa1d5140af6640cbfd",
+      "manifest_sha256": "71a3110e14e7304d03e97da65dec6fa98c2547479e37d1d2bb06a90d75243cb1",
+      "observation": "All 38 historical v0.1.0 files compared to PR10 Git blob OIDs, 6 exact, 32 divergent; historical native 15/15 pass NOT canonical acceptance"
     }
   ],
   "pipeline": {
@@ -199,48 +210,17 @@
       "objective": "K2-owned evidence to proposal/review bridge with distinct authorities"
     }
   ],
-  "control_head_sha": "ec3a294168559ca3d7ab9640145859eadf543e02",
+  "control_head_sha": "54adb9d383c9f587f2220d055a0707fbe146b6e8",
   "latest_local_increment": {
-    "record": ".k2s0-runtime/evidence/20261011-run43-r2-private-history-parser.json",
-    "classification": "LOCAL_FUNCTIONAL_R2_PARSER_CANDIDATE_NOT_CANONICAL_INTEGRATION_NOT_INDEPENDENT",
+    "record": ".k2s0-runtime/evidence/20261011-run45-historical-38-file-manifest.json",
+    "classification": "VERIFIED_LOCAL_P0_02_38_FILE_HASH_LEDGER_HISTORICAL_ONLY",
     "source_head": "455916b9bc0116d036e538cc7fdf4c5b127874c3",
-    "patch_sha256": "9812b6617fe9adbd4dab03d2611472851e82a44dee8b90dc48cd62da012ef378",
-    "artifact": "K2S0-run43-r2-historical-parser-local-candidate.zip",
-    "artifact_sha256": "ce53ce2abb35a8fa5b859344da2dc2e8e5ce6a5237fbebee4eb20be81fa67fec",
-    "checks": [
-      {
-        "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
-        "runtime": "Python 3.13.5",
-        "phase": "RED",
-        "collected": 11,
-        "errors": 2,
-        "exit_code": 1,
-        "log_sha256": "e8f948afdf5e57be5533df46ace56ed121ff7c9c4f2fe5213a0ff4997cb3ca02"
-      },
-      {
-        "command": "PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
-        "runtime": "Python 3.13.5",
-        "phase": "FINAL_GREEN",
-        "collected": 12,
-        "skips": 0,
-        "exit_code": 0,
-        "log_sha256": "1dce22a72a32634fc751adb99456ceb86d26d3576c98287fac944b7a6d19d2b7"
-      },
-      {
-        "command": "python -m compileall -q src tests",
-        "runtime": "Python 3.13.5",
-        "exit_code": 0
-      },
-      {
-        "command": "git apply --check <candidate patch> && git apply <candidate patch> && PYTHONPATH=src:build/grpc python -m unittest discover -s tests -v",
-        "runtime": "Python 3.13.5",
-        "exit_code": 0,
-        "tests_collected": 12,
-        "scope": "isolated canonical-like partial tree with exact canonical R2 init"
-      }
-    ],
-    "independent_review": false,
-    "source_overlap": "Run09-22 originals not retrieved, no canonical integration"
+    "artifact": "K2S0-run45-full-per-file-source-reconciliation.zip",
+    "artifact_sha256": "8d857b4d1bab65be400aee0d0b1230c8772fae609a7572aa1d5140af6640cbfd",
+    "source_archive_sha256": "14bc239d5d9c4c86440e9573abff01479164535e9433f8cad40fb32f90699fd1",
+    "manifest_sha256": "71a3110e14e7304d03e97da65dec6fa98c2547479e37d1d2bb06a90d75243cb1",
+    "checks": "38 file Git blobs compared; 15 historical native unittest green; no canonical native integration",
+    "independent_review": false
   },
   "append_only_records_reconciled": [
     "20261008-run13.json",
@@ -257,7 +237,8 @@
     "20261011-run42-closed-zip-sha256-correction.json",
     "20261011-run42-historical-base-source-inventory.json",
     "20261011-run43-r2-private-history-parser.json",
-    "20261011-run44-core-source-divergence.json"
+    "20261011-run44-core-source-divergence.json",
+    "20261011-run45-historical-38-file-manifest.json"
   ],
   "latest_audit": {
     "remote_record": ".k2s0-runtime/evidence/20261010-run40-component-replay-audit.json",
